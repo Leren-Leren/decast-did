@@ -12,14 +12,14 @@ pnpm add @decast/decast-did-resolver
 
 ## 🧩 Usage
 
-### With `decast-did-resolver` from `decast-did-resolver` package
+### With `did-resolver` from `decast-did-resolver` package
 
 ```ts
-import { Resolver } from 'decast-did-resolver';
-import { getResolver } from '@decast/decast-did-resolver';
+import { Resolver } from 'did-resolver';
+import { getDecastResolver } from '@decast/decast-did-resolver';
 
 const resolver = new Resolver({
-  ...getResolver()
+  ...getDecastResolver()
 });
 
 const didDocument = await resolver.resolve('did:decast:abc123');
@@ -29,7 +29,7 @@ console.log(didDocument);
 ### Directly
 
 ```ts
-import { resolveDID } from '@decast/decast-did-resolver';
+import { getDecastResolver } from '@decast/decast-did-resolver';
 
 const doc = await resolveDID('did:decast:abc123');
 console.log(doc);
