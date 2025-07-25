@@ -91,3 +91,145 @@ decast-did/
 ## 📄 License
 
 MIT
+
+
+
+
+
+
+# Decast DID Verifications
+
+Decast DID Verification is a decentralized identity (DID) proof system designed for use within the [Decast.live](https://decast.live) platform. It enables verifiers (such as Decast.live) to request specific identity credentials from users in a secure, privacy-preserving, and decentralized way using verifiable credentials and DID-based JWT proofs.
+
+---
+
+## 📌 Overview
+
+This module facilitates:
+- Requesting verification from users via DID.
+- Securely presenting only the required fields (`credentialSubject`) defined by the credential schema.
+- Generating a verifiable proof (DID-JWT) and redirecting it to the verifier.
+
+---
+
+## ⚙️ General Usage
+
+1. **Verifier (e.g., Decast.live)** initiates a verification request with:
+   - A **credential schema** that defines the structure of the credential.
+   - A list of requested **credentialSubject fields** (e.g., `firstName`, `age`, `verifiedDate`).
+   - Its own **verifier address**.
+
+2. **did-front** (Decast DID Frontend):
+   - Receives the verification query.
+   - Prompts the user to log in via:
+     - Metamask (wallet-based DID)
+     - Decast native DID
+   - Displays the request details:
+     - Requested credentialSubject fields
+     - Verifier information (e.g., `Decast.live`)
+
+3. After login:
+   - The app checks if the authenticated DID has a valid credential that matches the requested schema and `credentialSubject` fields.
+   - If a matching credential is found:
+     - The user is prompted to **generate a verifiable proof** (DID-JWT).
+     - The app redirects the user back to the **verifier** (e.g., Decast.live) with the signed proof.
+   - If no matching credential exists:
+     - The user is directed to **complete the verification process** with the appropriate **credential issuer service** for the schema.
+
+---
+
+## 🔁 Verification Flow
+
+```mermaid
+sequenceDiagram
+  participant V as Verifier (Decast.live)
+  participant F as DID Front (did-front)
+  participant U as User
+  participant W as Wallet/DID
+  participant C as Credential Storage
+  participant I as Issuer Service
+
+  V->>F: Request verification (schema, credentialSubject, verifierAddress)
+  F->>U: Prompt login
+  U->>W: Sign in (Metamask / Decast DID)
+  W-->>F: Authenticated session
+  F->>U: Show requested fields & verifier info
+  F->>C: Check for matching credential
+  alt Credential Found
+    C-->>F: Matching credential
+    F->>U: Prompt to generate proof
+    U->>F: Sign DID-JWT
+    F->>V: Redirect with proof (DID-JWT)
+  else No Credential Found
+    C-->>F: No credential
+    F->>U: Redirect to Issuer Service
+    U->>I: Complete verification
+    I->>C: Issue new credential
+  end
+```
+
+
+
+  {
+  "sub": "did:decast:abc123",
+  "iss": "did:decast:abc123",
+  "aud": "https://decast.live",
+  "exp": 1720000000,
+  "nbf": 1719990000,
+  "iat": 1719995000,
+  "credentialSchema": "did:decast:schemas:LivenessCredential",
+  "credentialSubject": {
+    "firstName": "John",
+    "age": 30,
+    "verifiedDate": "2025-07-25"
+  }
+}
+
+🧪 Development
+
+This repository consists of:
+	•	did-front: DID authentication and credential presentation UI.
+	•	did-sdk: DID-JWT generation, credential resolution, and verification logic.
+	•	verifier-demo: Sample verifier implementation for integration and testing.
+
+
+    🛠️ API Endpoints
+
+Base URL: https://did.decast.live/api/v1
+
+🔐 1. Login
+
+Initiate a login session using a wallet or DID.
+
+Request
+POST /auth/login
+Content-Type: application/json
+
+Body
+{
+  "method": "wallet" | "did",
+  "identifier": "0x123...abc" | "did:decast:xyz"
+}
+
+📥 2. Get All Registered DIDs
+
+Retrieve DIDs associated with a user or wallet.
+
+
+🆕 3. Register a New DID
+
+Create and register a new DID.
+
+
+✏️ 4. Update DID Document
+
+Update fields in an existing DID document.
+🗑️ 5. Remove a DID
+
+Delete a DID (soft delete or revoke access).
+
+
+🎓 6. Get Verifiable Credential (VC)
+
+Fetch a verifiable credential (VC) for a DID document and schema.
+
