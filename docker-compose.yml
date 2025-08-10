@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # DID Web Application
+  did-web:
+    build:
+      context: .
+      dockerfile: packages/did-web/Dockerfile
+      target: production
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - HOST=0.0.0.0
+      - PORT=8080
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com}
+      - DID_BASE_URL=${DID_BASE_URL:-http://localhost:3000}
+      - EXTENSION_ID=${EXTENSION_ID:-algkhhfaciplhfnkmecpmdfampkppndj}
+    volumes:
+      - ./packages/did-web/.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # DID Manager Extension Builder
+  did-manager:
+    build:
+      context: .
+      dockerfile: packages/did-manager/Dockerfile
+      target: production
+    volumes:
+      - did-manager-dist:/app/dist
+    restart: unless-stopped
+    profiles:
+      - build
+
+  # DID Resolver Package
+  did-resolver:
+    build:
+      context: .
+      dockerfile: packages/decast-did-resolver/Dockerfile
+      target: production
+    ports:
+      - "3001:3001"
+    volumes:
+      - did-resolver-dist:/app/dist
+    restart: unless-stopped
+    profiles:
+      - build
+
+  # Development environment
+  did-web-dev:
+    build:
+      context: .
+      dockerfile: packages/did-web/Dockerfile
+      target: base
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+      - PORT=8080
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com}
+      - DID_BASE_URL=${DID_BASE_URL:-http://localhost:3000}
+      - EXTENSION_ID=${EXTENSION_ID:-algkhhfaciplhfnkmecpmdfampkppndj}
+    volumes:
+      - ./packages/did-web:/app/packages/did-web
+      - ./packages/did-manager:/app/packages/did-manager
+      - ./packages/decast-did-resolver:/app/packages/decast-did-resolver
+      - ./package.json:/app/package.json
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml
+    working_dir: /app/packages/did-web
+    command: pnpm dev
+    restart: unless-stopped
+    profiles:
+      - dev
+
+volumes:
+  did-manager-dist:
+  did-resolver-dist:
+
+networks:
+  default:
+    name: decast-network

@@ -1,5 +1,5 @@
 {
-  "name": "did-ext",
+  "name": "did-manager",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -33,5 +33,9 @@
     "vue-loader": "^17.4.2",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=8.0.0"
   }
 }
