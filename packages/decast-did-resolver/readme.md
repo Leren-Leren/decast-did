@@ -2,6 +2,16 @@
 
 This is a DID Resolver implementation for the `did:decast` method. It allows you to resolve `did:decast:*` identifiers into W3C-compliant DID Documents.
 
+## 🆔 What is `did:decast`?
+
+`did:decast` is a custom DID method that uniquely represents a user within the Decast ecosystem. It complies with the [W3C DID specification](https://www.w3.org/TR/did-core/) and provides:
+
+- Cryptographic key association (Ed25519 by default)
+- Public verification methods
+- Authentication support (JWT, DIDComm, etc.)
+- Optional service endpoints (profile, storages, etc.)
+
+
 ## 📦 Installation
 
 ```bash
@@ -39,7 +49,6 @@ console.log(doc);
 
 ```bash
 pnpm install
-pnpm build
 ```
 
 ## 📄 DID Document Example
