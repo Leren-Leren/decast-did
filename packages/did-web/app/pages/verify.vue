@@ -10,7 +10,7 @@
         <div class="m-hr"></div>
         <div class="m-subheading-wrapper">
           <h3 class="m-content-subheading">
-             {{ domainName }}
+            {{ domainName }}
           </h3>
           <h3 class="m-content-subheading">
             <span>requests the following data</span>
@@ -20,9 +20,11 @@
         <div v-if="subjects && subjects.length > 0" class="m-content">
           <h2>{{ getServiceDisplayName(service) }}</h2>
           <div v-for="subject in subjects" :key="subject" class="m-subject">
-            <EyeIcon />
-            <span>Verification {{ formatFieldLabel(subject) }}</span>
-            <ArrowRight />
+            <div class="m-subject-label">
+              <EyeIcon />
+              <span>Verification {{ formatFieldLabel(subject) }}</span>
+              <ArrowRight />
+            </div>
             <span v-if="isClaimed && serviceData" class="subject-value">
               {{ getSubjectValue(subject) }}
             </span>
@@ -30,6 +32,37 @@
               {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
             </span>
           </div>
+        </div>
+
+        <div v-if="conditions && conditions.length > 0" class="m-content">
+          <h2>Verification conditions:</h2>
+          <ul class="conditions-list">
+            <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`" class="m-subject">
+              <span>{{ formatCondition(condition) }}</span>
+              <div v-if="isClaimed && serviceData" class="subject-value">
+                <span class="status-icon">
+                  <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="status-text">
+                  {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' :
+                    'Failed' }}
+                </span>
+              </div>
+              <div v-else class="subject-value pending">
+                <span class="status-text pending">
+                  {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
+                </span>
+              </div>
+            </li>
+          </ul>
         </div>
 
         <div v-if="authStore.isLoggedIn" class="m-buttons">
@@ -557,6 +590,13 @@ const generateProof = async () => {
 .m-subject {
   display: flex;
   margin-top: 12px;
+  justify-content: space-between;
+}
+
+.m-subject .m-subject-label{
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
 }
 
 .m-subject span {
@@ -751,12 +791,10 @@ const generateProof = async () => {
   font-weight: 500;
   padding: 4px 8px;
   border-radius: 4px;
-  background: #f0fdf4;
   color: #059669;
 }
 
 .status-text.pending {
-  background: #f3f4f6;
   color: #6b7280;
 }
 
