@@ -1,0 +1,10 @@
+/* assets/css/main.css */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body * {
+  box-sizing: border-box;
+}

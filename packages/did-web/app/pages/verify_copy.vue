@@ -1,73 +1,133 @@
 <template>
-  <div class="m-page">
-    <div class="m-page-container">
-      <div class="m-content-wrapper">
-        <div class="m-content-heading">
-          <span>Powered by</span>
-          <DidIcon />
-          <h2>DecastID</h2>
-        </div>
-        <div class="m-hr"></div>
-        <div class="m-subheading-wrapper">
-          <h3 class="m-content-subheading">
-             {{ domainName }}
-          </h3>
-          <h3 class="m-content-subheading">
-            <span>requests the following data</span>
-          </h3>
-        </div>
-        <div class="m-hr"></div>
-        <div v-if="subjects && subjects.length > 0" class="m-content">
-          <h2>{{ getServiceDisplayName(service) }}</h2>
-          <div v-for="subject in subjects" :key="subject" class="m-subject">
-            <EyeIcon />
-            <span>Verification {{ formatFieldLabel(subject) }}</span>
-            <ArrowRight />
-            <span v-if="isClaimed && serviceData" class="subject-value">
-              {{ getSubjectValue(subject) }}
-            </span>
-            <span v-else class="subject-value pending">
-              {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
-            </span>
-          </div>
+  <div class="verify-page">
+    <div class="verify-header">
+      <h1 class="verify-title">Verify Your Identity</h1>
+      <p class="verify-subtitle">Please complete the verification process to continue</p>
+      <p class="verify-verifier"><b>{{ domainName }}</b> requests the following data</p>
+    </div>
+
+    <div class="verify-content">
+      <div v-if="service" class="service-info">
+        <h3 class="service-title">{{ getServiceDisplayName(service) }}</h3>
+        <div v-if="service" class="claim-status">
+          <span v-if="isClaimed === true" class="claim-tag claimed">Claimed</span>
+          <button v-else-if="isClaimed === false" class="claim-tag claim-btn" @click="startVerification">Start
+            Verification</button>
         </div>
 
-        <div v-if="authStore.isLoggedIn" class="m-buttons">
-          <button v-if="isClaimed === true && callbackUrl" class="vc-button" @click="generateProof">
-            Generate a proof
-          </button>
-          <button v-else class="vc-button" @click="startVerification">
-            Claim
-          </button>
-          <button class="logout-button" @click="handleLogout">
-            Logout
+        <!-- Generate Proof Button for Claimed Services -->
+        <div v-if="isClaimed === true && callbackUrl" class="generate-proof-section">
+          <div class="proof-info">
+            <p class="proof-description">Your {{ getServiceDisplayName(service) }} is already verified. Generate a proof
+              to share with <b>{{ domainName }}</b>.</p>
+          </div>
+          <button class="generate-proof-button" @click="generateProof" :disabled="isGeneratingProof">
+            <span v-if="isGeneratingProof" class="loading-spinner"></span>
+            {{ isGeneratingProof ? 'Generating Proof...' : 'Generate Proof' }}
           </button>
         </div>
-        <div v-else class="m-buttons">
-          <!-- <DidLoginFullButton />
-          <button class="wallet-login-button" @click="setActiveModal('walletLoginModal')">
-            Login with Wallet
-          </button> -->
-          <MetaMaskLogin />
-          <br />
-          <DecastDidLogin />
+
+        <!-- Service verification component -->
+        <div v-if="showServiceComponent" class="service-component">
+          <GoogleAccountService v-if="service === 'google-account'" @verification-complete="handleVerificationComplete"
+            @verification-error="handleVerificationError" />
+          <LivenessCheckService v-if="service === 'liveness-check'" @verification-complete="handleVerificationComplete"
+            @verification-error="handleVerificationError" />
+          <EmailVerificationService v-if="service === 'email-verification'"
+            @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
+        </div>
+
+        <div v-if="subjects && subjects.length > 0" class="subjects-section">
+          <h4 class="section-title">Data to be verified:</h4>
+          <ul class="subjects-list">
+            <li v-for="subject in subjects" :key="subject" class="subject-item">
+              <span class="subject-label">View your {{ formatFieldLabel(subject) }}:</span>
+              <span v-if="isClaimed && serviceData" class="subject-value">
+                {{ getSubjectValue(subject) }}
+              </span>
+              <span v-else class="subject-value pending">
+                {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="conditions && conditions.length > 0" class="conditions-section">
+          <h4 class="section-title">Verification conditions:</h4>
+          <ul class="conditions-list">
+            <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`"
+              class="condition-item">
+              <div class="condition-text">
+                {{ formatCondition(condition) }}
+              </div>
+              <div v-if="isClaimed && serviceData" class="condition-status">
+                <span class="status-icon">
+                  <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="status-text">
+                  {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' :
+                  'Failed' }}
+                </span>
+              </div>
+              <div v-else class="condition-status">
+                <span class="status-text pending">
+                  {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
+                </span>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
+
+      <div v-else class="no-params">
+        <p>No verification parameters provided</p>
+      </div>
     </div>
-    <!-- <WalletLoginModal v-if="activeModal === 'walletLoginModal'" :closeModal="() => setActiveModal('')" /> -->
 
-    <!-- Service verification component -->
-
-    <!-- <GoogleAccountService v-if="service === 'google-account'" @verification-complete="handleVerificationComplete"
-      @verification-error="handleVerificationError" />
-    <LivenessCheckService v-if="service === 'liveness-check'" @verification-complete="handleVerificationComplete"
-      @verification-error="handleVerificationError" /> -->
-    <EmailVerificationModal v-if="showServiceComponent && service === 'email-verification'" :closeModal="closeModal"
-      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
-    <GoogleAccountModal v-if="showServiceComponent && service === 'google-account'" :closeModal="closeModal"
-      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
-    <LivenessCheckModal v-if="showServiceComponent && service === 'liveness-check'" :closeModal="closeModal"
-      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
+    <div class="verify-footer">
+      <!-- Show login options if not logged in, otherwise show logged-in status -->
+      <div v-if="!authStore.isLoggedIn" class="login-section">
+        <div class="login-options">
+          <h3 class="login-options-title">Choose your login method:</h3>
+          <div class="login-methods">
+            <div class="login-method">
+              <MetaMaskLogin />
+            </div>
+            <div class="login-divider">
+              <span>or</span>
+            </div>
+            <div class="login-method">
+              <DecastDidLogin />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="logged-in-section">
+        <div class="logged-in-status">
+          <div class="status-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </div>
+          <span class="status-text">Logged in successfully</span>
+          <span class="status-text">DID: {{ authStore.getDid }}</span>
+          <!-- <span class="status-text">Token: {{ authStore.token }}</span> -->
+          <!-- <span class="status-text">Refresh Token: {{ authStore.refreshToken }}</span> -->
+        </div>
+        <button class="logout-button" @click="handleLogout">
+          Logout
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -75,16 +135,9 @@
 import { useAuthStore } from '~/stores/auth'
 import { computed, ref, watchEffect } from 'vue'
 import { useAsyncData, useNuxtApp } from '#app'
-// import GoogleAccountService from '~/components/services/GoogleAccountService.vue'
-// import LivenessCheckService from '~/components/services/LivenessCheckService.vue'
-// import EmailVerificationService from '~/components/services/EmailVerificationService.vue'
-
-import EmailVerificationModal from '~/components/services/modal/EmailVerificationModal.vue'
-import GoogleAccountModal from '~/components/services/modal/GoogleAccountModal.vue'
-import LivenessCheckModal from '~/components/services/modal/LivenessCheckModal.vue'
-import DidIcon from '~/icons/DidIcon.vue'
-import EyeIcon from "~/icons/EyeIcon.vue";
-import ArrowRight from "~/icons/ArrowRight.vue";
+import GoogleAccountService from '~/components/services/GoogleAccountService.vue'
+import LivenessCheckService from '~/components/services/LivenessCheckService.vue'
+import EmailVerificationService from '~/components/services/EmailVerificationService.vue'
 
 const config = useRuntimeConfig()
 const DID_BASE_URL = config.public.didBaseUrl
@@ -101,7 +154,6 @@ const isClaimed = ref(null)
 const showServiceComponent = ref(false)
 const isGeneratingProof = ref(false)
 const serviceData = ref(null)
-const activeModal = ref('')
 
 // Get query parameters
 const service = computed(() => route.query.service)
@@ -148,14 +200,6 @@ const serviceDisplayNames = {
   'facebook-account': 'Facebook Account',
   'apple-account': 'Apple Account',
   'metamask-address': 'MetaMask Address'
-}
-
-const setActiveModal = (modalName) => {
-  activeModal.value = modalName;
-}
-
-const closeModal = () => {
-  showServiceComponent.value = false
 }
 
 const getServiceDisplayName = (serviceName) => {
@@ -461,7 +505,7 @@ const generateProof = async () => {
     console.log('Redirecting to:', redirectUrl.toString())
 
     // Redirect to the callback URL
-    window.location.href = redirectUrl.toString()
+    // window.location.href = redirectUrl.toString()
 
   } catch (error) {
     console.error('Failed to generate proof:', error)
@@ -472,149 +516,6 @@ const generateProof = async () => {
   }
 }
 </script>
-
-<style scoped>
-*:not(i) {
-  font-family: 'Rethink Sans' !important;
-}
-
-.m-page {
-  background-color: #15161F;
-  height: 100vh;
-  width: 100vw;
-}
-
-.m-page-container {
-  height: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.m-content-wrapper {
-  background-color: #1B1D29;
-  border-radius: 20px;
-  width: 550px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.m-content-heading {
-  display: flex;
-  padding: 20px;
-  color: #FFFFFF;
-}
-
-.m-content-heading span {
-  font-size: 14px;
-  margin-right: 16px;
-  display: flex;
-  align-items: center;
-}
-
-.m-content-heading h2 {
-  font-size: 22px;
-  font-weight: 500;
-  color: #FFF;
-  margin: 0px 0px 0px 10px;
-  padding: 0;
-}
-
-.m-subheading-wrapper {
-  padding: 30px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.m-content-subheading {
-  font-size: 26px;
-  font-weight: 600;
-  color: #FFF;
-  padding: 0;
-  margin: 0;
-}
-
-.m-content-subheading span {
-  color: #FFFFFF80;
-}
-
-.m-content {
-  padding: 20px;
-  width: 100%;
-}
-
-.m-content h2 {
-  font-size: 22px;
-  font-weight: 500;
-  color: #FFF;
-  padding: 0;
-  margin: 0;
-}
-
-.m-subject {
-  display: flex;
-  margin-top: 12px;
-}
-
-.m-subject span {
-  display: flex;
-  font-size: 16px;
-  font-weight: 500;
-  color: #FFFFFF80;
-  margin: 0px 10px;
-}
-
-.m-buttons {
-  width: 100%;
-  padding: 20px;
-}
-
-.m-hr {
-  width: 100%;
-  border: 1px solid #FFFFFF10;
-}
-
-.wallet-login-button {
-  font-size: 14px;
-  border-radius: 10px;
-  color: #FFFFFF;
-  padding: 0rem 0.85rem;
-  width: 100%;
-  height: 46px !important;
-  outline: none;
-  border: 1px solid #FFFFFF40;
-  cursor: pointer;
-  transition: transform 0.05s ease-in-out;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #1B1D29 !important;
-  margin-top: 12px;
-}
-
-.vc-button {
-  font-size: 14px;
-  border-radius: 10px;
-  color: #000000;
-  padding: 0rem 0.85rem;
-  width: 100%;
-  height: 46px !important;
-  outline: none;
-  border: 1px solid #D3CA57;
-  cursor: pointer;
-  transition: transform 0.05s ease-in-out;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #D3CA57 !important;
-  margin-top: 12px;
-}
-</style>
 
 <style scoped>
 .verify-page {
@@ -857,19 +758,19 @@ const generateProof = async () => {
 }
 
 .logout-button {
-  background-color: transparent;
-  color: #D3CA57;
+  background-color: #ef4444;
+  color: white;
   border: none;
-  margin-top: 14px;
+  padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0px;
 }
 
 .logout-button:hover {
+  background-color: #dc2626;
   transform: translateY(-1px);
 }
 
