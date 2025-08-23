@@ -532,6 +532,8 @@ const generateProof = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-height: 90vh;
+  overflow-y: scroll;
 }
 
 .m-content-heading {
