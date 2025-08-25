@@ -440,6 +440,7 @@ import LockImage from '~/icons/LockImage.vue'
 import DecastLogo from '~/icons/DecastLogo.vue'
 import OrDivider from '~/common/OrDivider.vue'
 import BaseModal from '~/layouts/BaseModal.vue'
+const { $customFetch } = useNuxtApp()
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -537,7 +538,7 @@ const fetchServices = async () => {
     console.log('Fetching DID document for:', userDid)
 
     // Fetch the DID document
-    const didDocument = await $fetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
+    const didDocument = await $customFetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${authStore.token}`
@@ -555,7 +556,7 @@ const fetchServices = async () => {
         console.log(`Fetching data for service: ${service.type}`)
 
         // Fetch service credential subjects data
-        const serviceData = await $fetch(service.serviceEndpoint, {
+        const serviceData = await $customFetch(service.serviceEndpoint, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${authStore.token}`
@@ -640,7 +641,7 @@ const deleteService = async () => {
     console.log('Deleting service:', serviceToDelete.value.service)
 
     // Call the delete API endpoint
-    await $fetch(`${DID_BASE_URL}/api/v1/dids/${serviceToDelete.value.service}`, {
+    await $customFetch(`${DID_BASE_URL}/api/v1/dids/${serviceToDelete.value.service}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${authStore.token}`

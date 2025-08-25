@@ -10,59 +10,66 @@
         <div class="m-hr"></div>
         <div class="m-subheading-wrapper">
           <h3 class="m-content-subheading">
-            {{ domainName }}
+            {{ domainName.charAt(0).toUpperCase() + domainName.slice(1) }}
           </h3>
           <h3 class="m-content-subheading">
             <span>requests the following data</span>
           </h3>
         </div>
         <div class="m-hr"></div>
-        <div v-if="subjects && subjects.length > 0" class="m-content">
-          <h2>{{ getServiceDisplayName(service) }}</h2>
-          <div v-for="subject in subjects" :key="subject" class="m-subject">
-            <div class="m-subject-label">
-              <EyeIcon />
-              <span>Verification {{ formatFieldLabel(subject) }}</span>
-              <ArrowRight />
+
+        <div v-if="service" class="m-content-div">
+          <div v-if="subjects && subjects.length > 0" class="m-content">
+            <h2>{{ getServiceDisplayName(service) }}</h2>
+            <div v-for="subject in subjects" :key="subject" class="m-subject">
+              <div class="m-subject-label">
+                <EyeIcon />
+                <span class="mrgn-left mrgn-right">{{ formatFieldLabel(subject) }}</span>
+                <ArrowRight />
+              </div>
+              <span v-if="isClaimed && serviceData" class="subject-value">
+                {{ getSubjectValue(subject) }}
+              </span>
+              <span v-else class="subject-value pending">
+                {{ isClaimed === null ? 'Pending verification' : 'Not verified' }}
+              </span>
             </div>
-            <span v-if="isClaimed && serviceData" class="subject-value">
-              {{ getSubjectValue(subject) }}
-            </span>
-            <span v-else class="subject-value pending">
-              {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
-            </span>
+          </div>
+          <div v-if="conditions && conditions.length > 0" class="m-content">
+            <h2>Verification conditions:</h2>
+            <ul class="conditions-list">
+              <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`"
+                class="m-subject">
+                <span>{{ formatCondition(condition) }}</span>
+                <div v-if="isClaimed && serviceData" class="subject-value">
+                  <span class="status-icon">
+                    <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
+                      width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                    <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span class="status-text">
+                    {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' :
+                      'Failed' }}
+                  </span>
+                </div>
+                <div v-else class="subject-value pending">
+                  <span class="status-text pending">
+                    {{ isClaimed === null ? 'Pending verification' : 'Not verified' }}
+                  </span>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <div v-if="conditions && conditions.length > 0" class="m-content">
-          <h2>Verification conditions:</h2>
-          <ul class="conditions-list">
-            <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`" class="m-subject">
-              <span>{{ formatCondition(condition) }}</span>
-              <div v-if="isClaimed && serviceData" class="subject-value">
-                <span class="status-icon">
-                  <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
-                    width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span class="status-text">
-                  {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' :
-                    'Failed' }}
-                </span>
-              </div>
-              <div v-else class="subject-value pending">
-                <span class="status-text pending">
-                  {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
-                </span>
-              </div>
-            </li>
-          </ul>
+        <div v-else class="no-params">
+          <p>No verification parameters provided</p>
         </div>
 
         <div v-if="authStore.isLoggedIn" class="m-buttons">
@@ -87,34 +94,27 @@
         </div>
       </div>
     </div>
-    <!-- <WalletLoginModal v-if="activeModal === 'walletLoginModal'" :closeModal="() => setActiveModal('')" /> -->
-
-    <!-- Service verification component -->
-
-    <!-- <GoogleAccountService v-if="service === 'google-account'" @verification-complete="handleVerificationComplete"
-      @verification-error="handleVerificationError" />
-    <LivenessCheckService v-if="service === 'liveness-check'" @verification-complete="handleVerificationComplete"
-      @verification-error="handleVerificationError" /> -->
     <EmailVerificationModal v-if="showServiceComponent && service === 'email-verification'" :closeModal="closeModal"
       @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
     <GoogleAccountModal v-if="showServiceComponent && service === 'google-account'" :closeModal="closeModal"
       @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
-    <LivenessCheckModal v-if="showServiceComponent && service === 'liveness-check'" :closeModal="closeModal"
+    <HumanLivenessCheck v-if="showServiceComponent && service === 'liveness-check'" :closeModal="closeModal"
       @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
   </div>
 </template>
 
 <script setup>
+import dayjs from "dayjs"
+const { $customFetch } = useNuxtApp();
 import { useAuthStore } from '~/stores/auth'
 import { computed, ref, watchEffect } from 'vue'
 import { useAsyncData, useNuxtApp } from '#app'
 // import GoogleAccountService from '~/components/services/GoogleAccountService.vue'
 // import LivenessCheckService from '~/components/services/LivenessCheckService.vue'
 // import EmailVerificationService from '~/components/services/EmailVerificationService.vue'
-
 import EmailVerificationModal from '~/components/services/modal/EmailVerificationModal.vue'
 import GoogleAccountModal from '~/components/services/modal/GoogleAccountModal.vue'
-import LivenessCheckModal from '~/components/services/modal/LivenessCheckModal.vue'
+import HumanLivenessCheck from '~/components/services/modal/HumanLivenessCheck.vue'
 import DidIcon from '~/icons/DidIcon.vue'
 import EyeIcon from "~/icons/EyeIcon.vue";
 import ArrowRight from "~/icons/ArrowRight.vue";
@@ -243,10 +243,29 @@ const formatFieldLabel = (key) => {
     .trim()
 }
 
+// const formatDate = (date, format = "DD/MM/YY HH:mm:ss") => {
+//   return dayjs(date).format(format)
+// }
+
+// const formatValue = (value) => {
+//   if (value === null || value === undefined) return 'N/A'
+//   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+//   if (typeof value === 'number') return value.toLocaleString()
+//   return String(value)
+// }
+
 const formatValue = (value) => {
-  if (value === null || value === undefined) return 'N/A'
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  if (typeof value === 'number') return value.toLocaleString()
+  if (value === null || value === undefined) return "N/A"
+
+  // check if value looks like a date
+  const date = dayjs(value)
+  if (date.isValid() && (typeof value === "string" || value instanceof Date)) {
+    return date.format("DD/MM/YY HH:mm:ss")
+  }
+
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (typeof value === "number") return value.toLocaleString()
+
   return String(value)
 }
 
@@ -294,7 +313,7 @@ const checkClaimed = async () => {
     console.log('Checking service for DID:', userDid)
 
     // Fetch the DID document
-    const didDocument = await $fetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
+    const didDocument = await $customFetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${authStore.token}`
@@ -331,7 +350,7 @@ const checkClaimed = async () => {
     console.log('Fetching service data from:', serviceInfo.serviceEndpoint)
 
     // Fetch service data
-    const fetchedServiceData = await $fetch(serviceInfo.serviceEndpoint, {
+    const fetchedServiceData = await $customFetch(serviceInfo.serviceEndpoint, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${authStore.token}`
@@ -460,7 +479,7 @@ const generateProof = async () => {
     console.log('Generating proof with data:', queryData)
 
     // Call the API to generate DID-JWT
-    const response = await $fetch(`${DID_BASE_URL}/api/v1/dids/vc`, {
+    const response = await $customFetch(`${DID_BASE_URL}/api/v1/dids/vc`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authStore.token}`,
@@ -523,6 +542,10 @@ const generateProof = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.m-content-div {
+  width: 100%;
 }
 
 .m-content-wrapper {
@@ -595,10 +618,9 @@ const generateProof = async () => {
   justify-content: space-between;
 }
 
-.m-subject .m-subject-label{
+.m-subject .m-subject-label {
   display: flex;
   align-items: center;
-  margin-left: 10px;
 }
 
 .m-subject span {
@@ -606,7 +628,6 @@ const generateProof = async () => {
   font-size: 16px;
   font-weight: 500;
   color: #FFFFFF80;
-  margin: 0px 10px;
 }
 
 .m-buttons {
@@ -655,6 +676,14 @@ const generateProof = async () => {
   justify-content: center;
   background-color: #D3CA57 !important;
   margin-top: 12px;
+}
+
+.mrgn-left {
+  margin-left: 10px;
+}
+
+.mrgn-right {
+  margin-right: 10px;
 }
 </style>
 
@@ -751,6 +780,7 @@ const generateProof = async () => {
 .subject-value {
   color: #059669;
   font-weight: 500;
+  display: flex;
 }
 
 .subject-value.pending {
@@ -805,10 +835,8 @@ const generateProof = async () => {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
   border-radius: 8px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
 }
 

@@ -11,16 +11,14 @@
           <div v-if="!isVerified" class="verification-section">
             <div class="video-container">
               <video ref="videoRef" autoplay muted playsinline width="400" height="300" class="camera-video" />
-              <div v-if="faceVisible" class="face-overlay">
+              <div v-if="state.faceVisible" class="face-overlay">
                 <div class="face-indicator">🙂</div>
               </div>
             </div>
 
             <div class="status-message">
-              <p>{{ getStatusMessage() }}</p>
-              <button v-if="!faceVisible && !isVerified" class="manual-trigger-btn" @click="manualTrigger">
-                Manual Start (if face detection fails)
-              </button>
+              <p v-if="isInitializing">⏳ Initializing camera and models...</p>
+              <p v-else>{{ statusMessage }}</p>
             </div>
           </div>
 
@@ -47,171 +45,132 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { ref, shallowRef, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import BaseModal from '~/layouts/BaseModal.vue'
 
-// Props from parent (to close modal)
-defineProps({
+const props = defineProps({
   closeModal: {
     type: Function,
     required: true
   }
 })
-
 const authStore = useAuthStore()
 const config = useRuntimeConfig()
 const DID_BASE_URL = config.public.didBaseUrl
+const emit = defineEmits(['verification-complete', 'verification-error'])
 
-// Reactive state
+// refs & state
 const isVerified = ref(false)
-const faceVisible = ref(false)
-const countdown = ref(null)
-const error = ref('')
-
-// Refs
 const videoRef = ref(null)
 const streamRef = ref(null)
-const intervalRef = ref(null)
 const animationRef = ref(null)
+const intervalRef = ref(null)
 const hasVerified = ref(false)
-const faceWasVisibleRef = ref(false)
-const humanRef = ref(null)
+const faceWasVisible = ref(false)
+const error = ref('')
+const isInitializing = ref(true)
+const humanRef = shallowRef(null) // ✅ use shallowRef for Human instance
 
+const state = reactive({
+  verified: false,
+  faceVisible: false,
+  countdown: null
+})
+
+// lifecycle
+onMounted(() => {
+  startCamera()
+})
+
+onBeforeUnmount(() => {
+  stopAll()
+})
+
+// methods
 // Initialize Human library
 const initializeHuman = async () => {
   try {
     console.log('Initializing Human library...')
-    // Dynamically import Human library
     const { Human } = await import('@vladmandic/human')
     console.log('Human library imported successfully')
 
     humanRef.value = new Human({
-      modelBasePath: "https://vladmandic.github.io/human/models",
+      modelBasePath: 'https://vladmandic.github.io/human/models',
       face: {
         enabled: true,
         detector: { enabled: true },
         mesh: { enabled: false },
         iris: { enabled: false },
-        emotion: { enabled: false },
+        emotion: { enabled: false }
       },
       body: { enabled: false },
-      hand: { enabled: false },
-      backend: 'webgl',
-      async: true,
-      warmup: 'none'
+      hand: { enabled: false }
     })
+
     console.log('Human instance created')
 
     console.log('Loading models...')
     await humanRef.value.load()
+    await humanRef.value.warmup()
     console.log('Models loaded successfully')
-
-    console.log('Human library initialized successfully')
   } catch (err) {
     console.error('Failed to initialize Human library:', err)
     error.value = 'Failed to initialize face detection'
-    // Continue without Human library, use fallback
     humanRef.value = null
   }
 }
 
-// Start camera
-const startCamera = async () => {
+async function startCamera() {
   try {
-    console.log('Requesting camera access...')
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        facingMode: 'user'
-      },
-    })
-    console.log('Camera access granted')
-
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true })
     streamRef.value = stream
     videoRef.value.srcObject = stream
-    console.log('Video stream set')
-
-    // Wait for video to be ready
-    videoRef.value.onloadedmetadata = () => {
-      console.log('Video metadata loaded')
-    }
-
-    videoRef.value.oncanplay = () => {
-      console.log('Video can play')
-    }
 
     await initializeHuman()
-    console.log('Starting detection loop...')
+    isInitializing.value = false
+
     detectLoop()
   } catch (err) {
     console.error('Camera or model load error:', err)
     error.value = 'Failed to access camera'
+    isInitializing.value = false
   }
 }
 
-// Detection loop
-const detectLoop = async () => {
+async function detectLoop() {
+  if (!humanRef.value) return
   if (hasVerified.value) return
 
   if (videoRef.value?.readyState === 4) {
-    try {
-      if (humanRef.value) {
-        const result = await humanRef.value.detect(videoRef.value)
-        console.log('Detection result:', result)
+    const result = await humanRef.value.detect(videoRef.value)
+    const face = result.face?.[0]
+    const faceNowVisible = !!face
 
-        const face = result.face?.[0]
-        const faceNowVisible = !!face
-
-        console.log('Face detected:', faceNowVisible, 'Face data:', face)
-
-        if (faceNowVisible && !faceWasVisibleRef.value) {
-          faceWasVisibleRef.value = true
-          faceVisible.value = true
-          startCountdown()
-        } else if (!faceNowVisible && faceWasVisibleRef.value) {
-          faceWasVisibleRef.value = false
-          faceVisible.value = false
-          cancelCountdown()
-        }
-      } else {
-        // Human library failed, use fallback detection
-        if (!faceWasVisibleRef.value) {
-          console.log('Using fallback detection (Human library not available)')
-          faceWasVisibleRef.value = true
-          faceVisible.value = true
-          startCountdown()
-        }
-      }
-    } catch (err) {
-      console.error('Detection error:', err)
-      // Fallback: if detection fails, assume face is visible for testing
-      if (!faceWasVisibleRef.value) {
-        console.log('Using fallback detection due to error')
-        faceWasVisibleRef.value = true
-        faceVisible.value = true
-        startCountdown()
-      }
+    if (faceNowVisible && !faceWasVisible.value) {
+      faceWasVisible.value = true
+      state.faceVisible = true
+      startCountdown()
+    } else if (!faceNowVisible && faceWasVisible.value) {
+      faceWasVisible.value = false
+      state.faceVisible = false
+      cancelCountdown()
     }
   }
 
   animationRef.value = requestAnimationFrame(detectLoop)
 }
 
-// Start countdown
-const startCountdown = () => {
+function startCountdown() {
   if (intervalRef.value) {
     clearInterval(intervalRef.value)
     intervalRef.value = null
   }
 
   let timeLeft = 5
-  countdown.value = timeLeft
+  state.countdown = timeLeft
   intervalRef.value = setInterval(() => {
     timeLeft -= 1
-    countdown.value = timeLeft
-
+    state.countdown = timeLeft
     if (timeLeft <= 0) {
       clearInterval(intervalRef.value)
       intervalRef.value = null
@@ -220,24 +179,22 @@ const startCountdown = () => {
   }, 1000)
 }
 
-// Cancel countdown
-const cancelCountdown = () => {
+function cancelCountdown() {
   if (intervalRef.value) {
     clearInterval(intervalRef.value)
     intervalRef.value = null
   }
-  countdown.value = null
+  state.countdown = null
 }
 
-// Verify user
-const verifyUser = async () => {
+async function verifyUser() {
   if (hasVerified.value) return
   hasVerified.value = true
 
+  state.verified = true
   isVerified.value = true
   stopAll()
 
-  // Prepare verification data
   const serviceData = {
     timestamp: new Date().toISOString(),
     faceDetected: true,
@@ -252,37 +209,30 @@ const verifyUser = async () => {
     }
   }
 
-  // Log verification data
   console.log('Liveness check verification data:', serviceData)
 
   try {
-    // Send verification data to API
     const response = await $fetch(`${DID_BASE_URL}/api/v1/dids/liveness-check`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authStore.token}`,
+        Authorization: `Bearer ${authStore.token}`,
         'Content-Type': 'application/json'
       },
-      body: {
-        serviceData
-      }
+      body: { serviceData }
     })
 
     console.log('Liveness check API response:', response)
 
-    // Emit success event to parent
     emit('verification-complete', {
       service: 'liveness-check',
       success: true,
       data: serviceData,
       apiResponse: response
     })
-
   } catch (apiError) {
     console.error('Failed to send liveness check data to API:', apiError)
     error.value = 'Verification completed but failed to save data'
 
-    // Still emit success since verification was completed locally
     emit('verification-complete', {
       service: 'liveness-check',
       success: true,
@@ -292,8 +242,7 @@ const verifyUser = async () => {
   }
 }
 
-// Stop all processes
-const stopAll = () => {
+function stopAll() {
   cancelCountdown()
   if (animationRef.value) cancelAnimationFrame(animationRef.value)
   if (streamRef.value) {
@@ -301,37 +250,13 @@ const stopAll = () => {
   }
 }
 
-// Manual trigger function
-const manualTrigger = () => {
-  if (!faceWasVisibleRef.value && !isVerified.value) {
-    console.log('Manual trigger activated')
-    faceWasVisibleRef.value = true
-    faceVisible.value = true
-    startCountdown()
-  }
-}
-
-// Get status message
-const getStatusMessage = () => {
-  if (isVerified.value) return "✅ User verified!"
-  if (countdown.value !== null)
-    return `🙂 Face detected. Verifying... (${countdown.value}s)`
-  if (faceVisible.value) return "🙂 Face detected. Hold still..."
-  return "❌ No face detected"
-}
-
-// Initialize on mount
-onMounted(() => {
-  startCamera()
+const statusMessage = computed(() => {
+  if (isInitializing.value) return '⏳ Initializing camera and models...'
+  if (state.verified) return '✅ User verified!'
+  if (state.countdown !== null) return `🙂 Face detected. Verifying... (${state.countdown}s)`
+  if (state.faceVisible) return '🙂 Face detected. Hold still...'
+  return '❌ No face detected'
 })
-
-// Clean up on unmount
-onUnmounted(() => {
-  stopAll()
-})
-
-// Define emits
-const emit = defineEmits(['verification-complete', 'verification-error'])
 </script>
 
 <style scoped>
@@ -424,7 +349,7 @@ const emit = defineEmits(['verification-complete', 'verification-error'])
 .status-message p {
   font-size: 16px;
   font-weight: 500;
-  color: #374151;
+  color: rgba(255, 255, 255, .6);
   margin: 0;
 }
 
@@ -456,8 +381,7 @@ const emit = defineEmits(['verification-complete', 'verification-error'])
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: #1B1D29;
   border-radius: 8px;
   color: #166534;
 }

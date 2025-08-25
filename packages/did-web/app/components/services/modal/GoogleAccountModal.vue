@@ -26,10 +26,11 @@
               </svg>
             </div>
 
-            <button class="google-login-button" @click="handleGoogleLogin" :disabled="isLoading">
+            <!-- <button class="google-login-button" @click="handleGoogleLogin" :disabled="isLoading">
               <span v-if="isLoading" class="loading-spinner"></span>
               {{ isLoading ? 'Connecting...' : 'Sign in with Google' }}
-            </button>
+            </button> -->
+            <div id="google-btn"></div>
           </div>
 
           <div v-else class="verified-section">
@@ -88,6 +89,18 @@ const initializeGoogleSignIn = () => {
       auto_select: false,
       ux_mode: 'popup',
     })
+    // Render the real button
+    window.google.accounts.id.renderButton(
+      document.getElementById('google-btn'),
+      {
+        theme: 'filled_blue',     // outline or filled_blue
+        size: 'large',        // small | medium | large
+        type: 'standard',     // standard = rectangle with text + logo
+        text: 'continue_with', // or 'signin_with'
+        shape: 'rectangular', // rectangular | pill | circle | square
+        width: '100%'         // makes it full width
+      }
+    );
   }
 }
 
@@ -116,11 +129,15 @@ const handleCredentialResponse = async (response) => {
     // Mark as verified
     isVerified.value = true
 
+    const googleAccountData = apiResponse.socials.find(
+      (social) => social.provider === 'google'
+    )
+
     // Emit success event to parent
     emit('verification-complete', {
       service: 'google-account',
       success: true,
-      data: apiResponse
+      data: googleAccountData
     })
 
   } catch (err) {
@@ -137,14 +154,15 @@ const handleCredentialResponse = async (response) => {
   }
 }
 
-// Handle Google login button click
-const handleGoogleLogin = () => {
-  if (typeof window !== 'undefined' && window.google) {
-    window.google.accounts.id.prompt()
-  } else {
-    error.value = 'Google Sign-In is not available'
-  }
-}
+// Handle Google login button click 
+// ---- THIS METHOD IS NOT WORKING ----
+// const handleGoogleLogin = () => {
+//   if (typeof window !== 'undefined' && window.google) {
+//     window.google.accounts.id.prompt()
+//   } else {
+//     error.value = 'Google Sign-In is not available'
+//   }
+// }
 
 // Initialize on mount
 onMounted(() => {
