@@ -40,7 +40,7 @@
             <ul class="conditions-list">
               <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`"
                 class="m-subject">
-                <span>{{ formatCondition(condition) }}</span>
+                <span class="m-subject-label" >{{ formatCondition(condition) }}</span>
                 <div v-if="isClaimed && serviceData" class="subject-value">
                   <span class="status-icon">
                     <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
@@ -213,23 +213,23 @@ const formatCondition = (condition) => {
 const getConditionText = (conditionType) => {
   switch (conditionType) {
     case 'eq':
-      return 'equals'
+      return 'must be equals to'
     case 'gt':
-      return 'is greater than'
+      return 'must be greater than'
     case 'gte':
-      return 'is greater than or equal to'
+      return 'must greater than or equal to'
     case 'lt':
-      return 'is less than'
+      return 'must be less than'
     case 'lte':
-      return 'is less than or equal to'
+      return 'must less than or equal to'
     case 'ne':
-      return 'is not equal to'
+      return 'must not equal to'
     case 'contains':
-      return 'contains'
+      return 'must contains'
     case 'startsWith':
-      return 'starts with'
+      return 'must starts with'
     case 'endsWith':
-      return 'ends with'
+      return 'must ends with'
     default:
       return conditionType
   }
@@ -621,6 +621,7 @@ const generateProof = async () => {
 .m-subject .m-subject-label {
   display: flex;
   align-items: center;
+  flex: 2;
 }
 
 .m-subject span {
@@ -781,6 +782,9 @@ const generateProof = async () => {
   color: #059669;
   font-weight: 500;
   display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .subject-value.pending {
@@ -816,12 +820,13 @@ const generateProof = async () => {
 .status-icon {
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 0px 4px;
 }
 
 .status-text {
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 8px;
   border-radius: 4px;
   color: #059669;
 }
@@ -911,12 +916,6 @@ const generateProof = async () => {
   border: 1px solid #bbf7d0;
   border-radius: 8px;
   color: #166534;
-}
-
-.status-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .status-text {
