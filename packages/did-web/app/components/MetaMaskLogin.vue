@@ -1,66 +1,16 @@
 <template>
-  <div class="metamask-login">
-    <div class="login-header">
-      <h3 class="login-title">Login with MetaMask</h3>
-      <p class="login-subtitle">Connect your wallet to continue</p>
-    </div>
-
-    <div class="login-content">
-      <div v-if="!isConnected" class="connect-section">
-        <button 
-          class="connect-button" 
-          @click="connectWallet"
-          :disabled="isLoading"
-        >
-          <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? 'Connecting...' : 'Connect MetaMask' }}
-        </button>
-      </div>
-
-      <div v-else class="wallet-info">
-        <div class="wallet-address">
-          <span class="address-label">Connected Address:</span>
-          <span class="address-value">{{ shortAddress }}</span>
-        </div>
-        
-        <div v-if="!isAuthenticating" class="auth-section">
-          <button 
-            class="login-button" 
-            @click="authenticate"
-            :disabled="isLoading"
-          >
-            <span v-if="isLoading" class="loading-spinner"></span>
-            {{ isLoading ? 'Signing...' : 'Sign & Login' }}
-          </button>
-        </div>
-
-        <div v-else class="auth-progress">
-          <div class="progress-step">
-            <span class="step-icon">1</span>
-            <span class="step-text">Getting nonce...</span>
-          </div>
-          <div class="progress-step">
-            <span class="step-icon">2</span>
-            <span class="step-text">Signing message...</span>
-          </div>
-          <div class="progress-step">
-            <span class="step-icon">3</span>
-            <span class="step-text">Authenticating...</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-  </div>
+  <button class="login-btn" @click="connectWallet">
+    <div class="did-icon-wrapper-btn">
+      <MetamaskLogo />
+    </div> Login with a MetaMask
+  </button>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { ethers } from "ethers";
+import MetamaskLogo from '~/icons/MetamaskLogo.vue'
 
 const config = useRuntimeConfig()
 const DID_BASE_URL = config.public.didBaseUrl
@@ -97,13 +47,14 @@ const connectWallet = async () => {
     error.value = ''
 
     // Request account access
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_requestAccounts' 
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts'
     })
 
     if (accounts.length > 0) {
       walletAddress.value = accounts[0]
       isConnected.value = true
+      authenticate();
     }
   } catch (err) {
     error.value = err.message || 'Failed to connect wallet'
@@ -199,6 +150,52 @@ onMounted(() => {
 </script>
 
 <style scoped>
+*:not(i) {
+  font-family: 'Rethink Sans' !important;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.login-btn {
+  font-size: 14px;
+  border-radius: 10px;
+  color: #FFFFFF;
+  padding: 0rem 0.85rem;
+  width: 100%;
+  height: 46px !important;
+  outline: none;
+  border: 1px solid #FFFFFF40;
+  cursor: pointer;
+  transition: transform 0.05s ease-in-out;
+  position: relative;
+  background-color: #1B1D29;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.did-icon-wrapper-btn {
+  background-color: #1B1D29 !important;
+  border: 1px solid #242632 !important;
+  border-radius: 4px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min-content;
+  padding: 5px;
+  margin-right: 8px;
+}
+
+.did-icon-wrapper-btn svg {
+  height: 12px;
+  width: 12px;
+}
+</style>
+
+<style scoped>
 .metamask-login {
   padding: 24px;
   border-radius: 12px;
@@ -236,7 +233,8 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.connect-button, .login-button {
+.connect-button,
+.login-button {
   width: 100%;
   padding: 12px 24px;
   background: linear-gradient(135deg, #f7931e 0%, #e2761b 100%);
@@ -253,12 +251,14 @@ onMounted(() => {
   gap: 8px;
 }
 
-.connect-button:hover:not(:disabled), .login-button:hover:not(:disabled) {
+.connect-button:hover:not(:disabled),
+.login-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(247, 147, 30, 0.3);
 }
 
-.connect-button:disabled, .login-button:disabled {
+.connect-button:disabled,
+.login-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
@@ -345,4 +345,4 @@ onMounted(() => {
   font-size: 14px;
   text-align: center;
 }
-</style> 
+</style>

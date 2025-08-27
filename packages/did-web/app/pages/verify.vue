@@ -1,151 +1,126 @@
 <template>
-  <div class="verify-page">
-    <div class="verify-header">
-      <h1 class="verify-title">Verify Your Identity</h1>
-      <p class="verify-subtitle">Please complete the verification process to continue</p>
-      <p class="verify-verifier"><b>{{ domainName }}</b> requests the following data</p>
-    </div>
-    
-    <div class="verify-content">
-      <div v-if="service" class="service-info">
-        <h3 class="service-title">{{ getServiceDisplayName(service) }}</h3>
-        <div v-if="service" class="claim-status">
-          <span v-if="isClaimed === true" class="claim-tag claimed">Claimed</span>
-          <button v-else-if="isClaimed === false" class="claim-tag claim-btn" @click="startVerification">Start Verification</button>
+  <div class="m-page">
+    <div class="m-page-container">
+      <div class="m-content-wrapper">
+        <div class="m-content-heading">
+          <span>Powered by</span>
+          <DidIcon />
+          <h2>DecastID</h2>
         </div>
-        
-        <!-- Generate Proof Button for Claimed Services -->
-        <div v-if="isClaimed === true && callbackUrl" class="generate-proof-section">
-          <div class="proof-info">
-            <p class="proof-description">Your {{ getServiceDisplayName(service) }} is already verified. Generate a proof to share with <b>{{ domainName }}</b>.</p>
-          </div>
-          <button 
-            class="generate-proof-button" 
-            @click="generateProof"
-            :disabled="isGeneratingProof"
-          >
-            <span v-if="isGeneratingProof" class="loading-spinner"></span>
-            {{ isGeneratingProof ? 'Generating Proof...' : 'Generate Proof' }}
-          </button>
+        <div class="m-hr"></div>
+        <div class="m-subheading-wrapper">
+          <h3 class="m-content-subheading">
+            {{ domainName.charAt(0).toUpperCase() + domainName.slice(1) }}
+          </h3>
+          <h3 class="m-content-subheading">
+            <span>requests the following data</span>
+          </h3>
         </div>
-        
-        <!-- Service verification component -->
-        <div v-if="showServiceComponent" class="service-component">
-          <GoogleAccountService 
-            v-if="service === 'google-account'"
-            @verification-complete="handleVerificationComplete"
-            @verification-error="handleVerificationError"
-          />
-          <LivenessCheckService 
-            v-if="service === 'liveness-check'"
-            @verification-complete="handleVerificationComplete"
-            @verification-error="handleVerificationError"
-          />
-          <EmailVerificationService 
-            v-if="service === 'email-verification'"
-            @verification-complete="handleVerificationComplete"
-            @verification-error="handleVerificationError"
-          />
-        </div>
-        
-        <div v-if="subjects && subjects.length > 0" class="subjects-section">
-          <h4 class="section-title">Data to be verified:</h4>
-          <ul class="subjects-list">
-            <li v-for="subject in subjects" :key="subject" class="subject-item">
-              <span class="subject-label">View your {{ formatFieldLabel(subject) }}:</span>
+        <div class="m-hr"></div>
+
+        <div v-if="service" class="m-content-div">
+          <div v-if="subjects && subjects.length > 0" class="m-content">
+            <h2>{{ getServiceDisplayName(service) }}</h2>
+            <div v-for="subject in subjects" :key="subject" class="m-subject">
+              <div class="m-subject-label">
+                <EyeIcon />
+                <span class="mrgn-left mrgn-right">{{ formatFieldLabel(subject) }}</span>
+                <ArrowRight />
+              </div>
               <span v-if="isClaimed && serviceData" class="subject-value">
                 {{ getSubjectValue(subject) }}
               </span>
               <span v-else class="subject-value pending">
-                {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
+                {{ isClaimed === null ? 'Pending verification' : 'Not verified' }}
               </span>
-            </li>
-          </ul>
-        </div>
-        
-        <div v-if="conditions && conditions.length > 0" class="conditions-section">
-          <h4 class="section-title">Verification conditions:</h4>
-          <ul class="conditions-list">
-            <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`" class="condition-item">
-              <div class="condition-text">
-                {{ formatCondition(condition) }}
-              </div>
-              <div v-if="isClaimed && serviceData" class="condition-status">
-                <span class="status-icon">
-                  <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-                <span class="status-text">
-                  {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' : 'Failed' }}
-                </span>
-              </div>
-              <div v-else class="condition-status">
-                <span class="status-text pending">
-                  {{ isClaimed === null ? 'Checking...' : 'Not verified' }}
-                </span>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-      
-      <div v-else class="no-params">
-        <p>No verification parameters provided</p>
-      </div>
-    </div>
-    
-    <div class="verify-footer">
-      <!-- Show login options if not logged in, otherwise show logged-in status -->
-      <div v-if="!authStore.isLoggedIn" class="login-section">
-        <div class="login-options">
-          <h3 class="login-options-title">Choose your login method:</h3>
-          <div class="login-methods">
-            <div class="login-method">
-              <MetaMaskLogin />
-            </div>
-            <div class="login-divider">
-              <span>or</span>
-            </div>
-            <div class="login-method">
-              <DecastDidLogin />
             </div>
           </div>
-        </div>
-      </div>
-      <div v-else class="logged-in-section">
-        <div class="logged-in-status">
-          <div class="status-icon">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M16.667 5L7.5 14.167L3.333 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+          <div v-if="conditions && conditions.length > 0" class="m-content">
+            <h2>Verification conditions:</h2>
+            <ul class="conditions-list">
+              <li v-for="condition in conditions" :key="`${condition.subject}-${condition.condition}`"
+                class="m-subject">
+                <span class="m-subject-label" >{{ formatCondition(condition) }}</span>
+                <div v-if="isClaimed && serviceData" class="subject-value">
+                  <span class="status-icon">
+                    <svg v-if="checkCondition(serviceData[condition.subject], condition.condition, condition.value)"
+                      width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 6L9 17L4 12" stroke="#059669" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                    <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="#dc2626" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span class="status-text">
+                    {{ checkCondition(serviceData[condition.subject], condition.condition, condition.value) ? 'Passed' :
+                      'Failed' }}
+                  </span>
+                </div>
+                <div v-else class="subject-value pending">
+                  <span class="status-text pending">
+                    {{ isClaimed === null ? 'Pending verification' : 'Not verified' }}
+                  </span>
+                </div>
+              </li>
+            </ul>
           </div>
-          <span class="status-text">Logged in successfully</span>
-          <span class="status-text">DID: {{ authStore.getDid }}</span>
-          <!-- <span class="status-text">Token: {{ authStore.token }}</span> -->
-          <!-- <span class="status-text">Refresh Token: {{ authStore.refreshToken }}</span> -->
         </div>
-        <button class="logout-button" @click="handleLogout">
-          Logout
-        </button>
+        <div v-else class="no-params">
+          <p>No verification parameters provided</p>
+        </div>
+
+        <div v-if="authStore.isLoggedIn" class="m-buttons">
+          <button v-if="isClaimed === true && callbackUrl" class="vc-button" @click="generateProof">
+            Generate a proof
+          </button>
+          <button v-else class="vc-button" @click="startVerification">
+            Claim
+          </button>
+          <button class="logout-button" @click="handleLogout">
+            Logout
+          </button>
+        </div>
+        <div v-else class="m-buttons">
+          <!-- <DidLoginFullButton />
+          <button class="wallet-login-button" @click="setActiveModal('walletLoginModal')">
+            Login with Wallet
+          </button> -->
+          <MetaMaskLogin />
+          <br />
+          <DecastDidLogin />
+        </div>
       </div>
     </div>
+    <EmailVerificationModal v-if="showServiceComponent && service === 'email-verification'" :closeModal="closeModal"
+      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
+    <GoogleAccountModal v-if="showServiceComponent && service === 'google-account'" :closeModal="closeModal"
+      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
+    <HumanLivenessCheck v-if="showServiceComponent && service === 'liveness-check'" :closeModal="closeModal"
+      @verification-complete="handleVerificationComplete" @verification-error="handleVerificationError" />
   </div>
 </template>
 
 <script setup>
+import dayjs from "dayjs"
+const { $customFetch } = useNuxtApp();
 import { useAuthStore } from '~/stores/auth'
 import { computed, ref, watchEffect } from 'vue'
 import { useAsyncData, useNuxtApp } from '#app'
-import GoogleAccountService from '~/components/services/GoogleAccountService.vue'
-import LivenessCheckService from '~/components/services/LivenessCheckService.vue'
-import EmailVerificationService from '~/components/services/EmailVerificationService.vue'
+// import GoogleAccountService from '~/components/services/GoogleAccountService.vue'
+// import LivenessCheckService from '~/components/services/LivenessCheckService.vue'
+// import EmailVerificationService from '~/components/services/EmailVerificationService.vue'
+import EmailVerificationModal from '~/components/services/modal/EmailVerificationModal.vue'
+import GoogleAccountModal from '~/components/services/modal/GoogleAccountModal.vue'
+import HumanLivenessCheck from '~/components/services/modal/HumanLivenessCheck.vue'
+import DidIcon from '~/icons/DidIcon.vue'
+import EyeIcon from "~/icons/EyeIcon.vue";
+import ArrowRight from "~/icons/ArrowRight.vue";
 
 const config = useRuntimeConfig()
-const DID_BASE_URL = config.public.didBaseUrl 
+const DID_BASE_URL = config.public.didBaseUrl
 
 
 definePageMeta({
@@ -159,6 +134,7 @@ const isClaimed = ref(null)
 const showServiceComponent = ref(false)
 const isGeneratingProof = ref(false)
 const serviceData = ref(null)
+const activeModal = ref('')
 
 // Get query parameters
 const service = computed(() => route.query.service)
@@ -207,45 +183,53 @@ const serviceDisplayNames = {
   'metamask-address': 'MetaMask Address'
 }
 
+const setActiveModal = (modalName) => {
+  activeModal.value = modalName;
+}
+
+const closeModal = () => {
+  showServiceComponent.value = false
+}
+
 const getServiceDisplayName = (serviceName) => {
   return serviceDisplayNames[serviceName] || serviceName
 }
 
 const formatCondition = (condition) => {
   const { subject, condition: conditionType, value } = condition
-  
+
   // Format subject name
   const subjectName = formatFieldLabel(subject)
-  
+
   // Format condition type
   const conditionText = getConditionText(conditionType)
-  
+
   // Format value
   const formattedValue = formatValue(value)
-  
+
   return `${subjectName} ${conditionText} ${formattedValue}`
 }
 
 const getConditionText = (conditionType) => {
   switch (conditionType) {
     case 'eq':
-      return 'equals'
+      return 'must be equals to'
     case 'gt':
-      return 'is greater than'
+      return 'must be greater than'
     case 'gte':
-      return 'is greater than or equal to'
+      return 'must greater than or equal to'
     case 'lt':
-      return 'is less than'
+      return 'must be less than'
     case 'lte':
-      return 'is less than or equal to'
+      return 'must less than or equal to'
     case 'ne':
-      return 'is not equal to'
+      return 'must not equal to'
     case 'contains':
-      return 'contains'
+      return 'must contains'
     case 'startsWith':
-      return 'starts with'
+      return 'must starts with'
     case 'endsWith':
-      return 'ends with'
+      return 'must ends with'
     default:
       return conditionType
   }
@@ -259,10 +243,29 @@ const formatFieldLabel = (key) => {
     .trim()
 }
 
+// const formatDate = (date, format = "DD/MM/YY HH:mm:ss") => {
+//   return dayjs(date).format(format)
+// }
+
+// const formatValue = (value) => {
+//   if (value === null || value === undefined) return 'N/A'
+//   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+//   if (typeof value === 'number') return value.toLocaleString()
+//   return String(value)
+// }
+
 const formatValue = (value) => {
-  if (value === null || value === undefined) return 'N/A'
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  if (typeof value === 'number') return value.toLocaleString()
+  if (value === null || value === undefined) return "N/A"
+
+  // check if value looks like a date
+  const date = dayjs(value)
+  if (date.isValid() && (typeof value === "string" || value instanceof Date)) {
+    return date.format("DD/MM/YY HH:mm:ss")
+  }
+
+  if (typeof value === "boolean") return value ? "Yes" : "No"
+  if (typeof value === "number") return value.toLocaleString()
+
   return String(value)
 }
 
@@ -292,7 +295,7 @@ const checkClaimed = async () => {
     isClaimed.value = null
     return
   }
-  
+
   try {
     // First, ensure we have the user's DID
     let userDid = authStore.getDid
@@ -300,42 +303,42 @@ const checkClaimed = async () => {
       const profile = await authStore.fetchUserDid()
       userDid = profile?.did || authStore.getDid
     }
-    
+
     if (!userDid) {
       console.error('No DID found for user')
       isClaimed.value = false
       return
     }
-    
+
     console.log('Checking service for DID:', userDid)
-    
+
     // Fetch the DID document
-    const didDocument = await $fetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
+    const didDocument = await $customFetch(`${DID_BASE_URL}/api/v1/dids/${encodeURIComponent(userDid)}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    
+
     console.log('DID Document:', didDocument)
-    
+
     // Check if the service exists in the DID document's service array
     const services = didDocument.service || []
     const serviceExists = services.some(s => s.type === service.value)
-    
+
     if (!serviceExists) {
       console.log('Service does not exist in DID document')
       isClaimed.value = false
       return
     }
-    
+
     // If no conditions are specified, service is claimed
     if (!conditions.value || conditions.value.length === 0) {
       console.log('No conditions specified, service is claimed')
       isClaimed.value = true
       return
     }
-    
+
     // Find the service endpoint
     const serviceInfo = services.find(s => s.type === service.value)
     if (!serviceInfo || !serviceInfo.serviceEndpoint) {
@@ -343,22 +346,22 @@ const checkClaimed = async () => {
       isClaimed.value = false
       return
     }
-    
+
     console.log('Fetching service data from:', serviceInfo.serviceEndpoint)
-    
+
     // Fetch service data
-    const fetchedServiceData = await $fetch(serviceInfo.serviceEndpoint, {
+    const fetchedServiceData = await $customFetch(serviceInfo.serviceEndpoint, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${authStore.token}`
       }
     })
-    
+
     console.log('Service data:', fetchedServiceData)
-    
+
     // Store service data for display
     serviceData.value = fetchedServiceData
-    
+
     // Check conditions against service data
     // const credentialSubjects = serviceData.credentialSubjects || []
     // if (credentialSubjects.length === 0) {
@@ -366,34 +369,34 @@ const checkClaimed = async () => {
     //   isClaimed.value = false
     //   return
     // }
-    
+
     // Check all conditions
     const allConditionsMet = conditions.value.every(condition => {
-      console.log('condition', condition) 
+      console.log('condition', condition)
       const { subject, condition: conditionType, value } = condition
-      
+
       console.log(`Checking condition: ${subject} ${conditionType} ${value}`)
-      
+
       // Find the subject field in service data
       const subjectValue = serviceData.value[subject]
-      
+
       if (subjectValue === undefined) {
         console.log(`Subject field '${subject}' not found in credential data`)
         return false
       }
-      
+
       console.log(`Subject value: ${subjectValue}, Expected: ${value}, Condition: ${conditionType}`)
-      
+
       // Apply condition check
       const conditionMet = checkCondition(subjectValue, conditionType, value)
       console.log(`Condition met: ${conditionMet}`)
-      
+
       return conditionMet
     })
-    
+
     console.log(`All conditions met: ${allConditionsMet}`)
     isClaimed.value = allConditionsMet
-    
+
   } catch (error) {
     console.error('Failed to check claimed status:', error)
     isClaimed.value = false
@@ -405,13 +408,13 @@ const checkCondition = (actualValue, conditionType, expectedValue) => {
   // Convert values to appropriate types for comparison
   let actual = actualValue
   let expected = expectedValue
-  
+
   // Try to convert to numbers if possible
   if (!isNaN(actual) && !isNaN(expected)) {
     actual = parseFloat(actual)
     expected = parseFloat(expected)
   }
-  
+
   switch (conditionType) {
     case 'eq':
       return actual === expected
@@ -466,7 +469,7 @@ const generateProof = async () => {
 
   try {
     isGeneratingProof.value = true
-    
+
     // Prepare the query data to send to the API
     const queryData = {
       service: service.value,
@@ -476,7 +479,7 @@ const generateProof = async () => {
     console.log('Generating proof with data:', queryData)
 
     // Call the API to generate DID-JWT
-    const response = await $fetch(`${DID_BASE_URL}/api/v1/dids/vc`, {
+    const response = await $customFetch(`${DID_BASE_URL}/api/v1/dids/vc`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${authStore.token}`,
@@ -497,7 +500,7 @@ const generateProof = async () => {
     // Redirect to callback URL with JWT
     const redirectUrl = new URL(callbackUrl.value)
     redirectUrl.searchParams.set('didJwt', didJwt)
-    
+
     // Add any additional parameters from the response
     if (response.status) {
       redirectUrl.searchParams.set('status', response.status)
@@ -508,9 +511,9 @@ const generateProof = async () => {
     redirectUrl.searchParams.set('audience', authStore.getDid)
 
     console.log('Redirecting to:', redirectUrl.toString())
-    
+
     // Redirect to the callback URL
-    // window.location.href = redirectUrl.toString()
+    window.location.href = redirectUrl.toString()
 
   } catch (error) {
     console.error('Failed to generate proof:', error)
@@ -521,6 +524,169 @@ const generateProof = async () => {
   }
 }
 </script>
+
+<style scoped>
+*:not(i) {
+  font-family: 'Rethink Sans' !important;
+}
+
+.m-page {
+  background-color: #15161F;
+  height: 100vh;
+  width: 100vw;
+}
+
+.m-page-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-content-div {
+  width: 100%;
+}
+
+.m-content-wrapper {
+  background-color: #1B1D29;
+  border-radius: 20px;
+  width: 550px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 90vh;
+  overflow-y: scroll;
+}
+
+.m-content-heading {
+  display: flex;
+  padding: 20px;
+  color: #FFFFFF;
+}
+
+.m-content-heading span {
+  font-size: 14px;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.m-content-heading h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: #FFF;
+  margin: 0px 0px 0px 10px;
+  padding: 0;
+}
+
+.m-subheading-wrapper {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.m-content-subheading {
+  font-size: 26px;
+  font-weight: 600;
+  color: #FFF;
+  padding: 0;
+  margin: 0;
+}
+
+.m-content-subheading span {
+  color: #FFFFFF80;
+}
+
+.m-content {
+  padding: 20px;
+  width: 100%;
+}
+
+.m-content h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: #FFF;
+  padding: 0;
+  margin: 0;
+}
+
+.m-subject {
+  display: flex;
+  margin-top: 12px;
+  justify-content: space-between;
+}
+
+.m-subject .m-subject-label {
+  display: flex;
+  align-items: center;
+  flex: 2;
+}
+
+.m-subject span {
+  display: flex;
+  font-size: 16px;
+  font-weight: 500;
+  color: #FFFFFF80;
+}
+
+.m-buttons {
+  width: 100%;
+  padding: 20px;
+}
+
+.m-hr {
+  width: 100%;
+  border: 1px solid #FFFFFF10;
+}
+
+.wallet-login-button {
+  font-size: 14px;
+  border-radius: 10px;
+  color: #FFFFFF;
+  padding: 0rem 0.85rem;
+  width: 100%;
+  height: 46px !important;
+  outline: none;
+  border: 1px solid #FFFFFF40;
+  cursor: pointer;
+  transition: transform 0.05s ease-in-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1B1D29 !important;
+  margin-top: 12px;
+}
+
+.vc-button {
+  font-size: 14px;
+  border-radius: 10px;
+  color: #000000;
+  padding: 0rem 0.85rem;
+  width: 100%;
+  height: 46px !important;
+  outline: none;
+  border: 1px solid #D3CA57;
+  cursor: pointer;
+  transition: transform 0.05s ease-in-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #D3CA57 !important;
+  margin-top: 12px;
+}
+
+.mrgn-left {
+  margin-left: 10px;
+}
+
+.mrgn-right {
+  margin-right: 10px;
+}
+</style>
 
 <style scoped>
 .verify-page {
@@ -582,11 +748,13 @@ const generateProof = async () => {
   margin-bottom: 12px;
 }
 
-.subjects-section, .conditions-section {
+.subjects-section,
+.conditions-section {
   margin-bottom: 24px;
 }
 
-.subjects-list, .conditions-list {
+.subjects-list,
+.conditions-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -613,6 +781,10 @@ const generateProof = async () => {
 .subject-value {
   color: #059669;
   font-weight: 500;
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .subject-value.pending {
@@ -648,19 +820,18 @@ const generateProof = async () => {
 .status-icon {
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 0px 4px;
 }
 
 .status-text {
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 8px;
   border-radius: 4px;
-  background: #f0fdf4;
   color: #059669;
 }
 
 .status-text.pending {
-  background: #f3f4f6;
   color: #6b7280;
 }
 
@@ -669,10 +840,8 @@ const generateProof = async () => {
   align-items: center;
   justify-content: center;
   min-height: 200px;
-  background-color: #f9fafb;
-  border: 2px dashed #d1d5db;
   border-radius: 8px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
 }
 
@@ -749,31 +918,25 @@ const generateProof = async () => {
   color: #166534;
 }
 
-.status-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .status-text {
   font-size: 14px;
   font-weight: 500;
 }
 
 .logout-button {
-  background-color: #ef4444;
-  color: white;
+  background-color: transparent;
+  color: #D3CA57;
   border: none;
-  padding: 8px 16px;
+  margin-top: 14px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 0px;
 }
 
 .logout-button:hover {
-  background-color: #dc2626;
   transform: translateY(-1px);
 }
 
@@ -811,11 +974,13 @@ const generateProof = async () => {
   margin-bottom: 12px;
   margin-top: 4px;
 }
+
 .claimed {
   background: #e0fce0;
   color: #15803d;
   border: 1px solid #bbf7d0;
 }
+
 .claim-btn {
   background: #fef9c3;
   color: #b45309;
@@ -823,6 +988,7 @@ const generateProof = async () => {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .claim-btn:hover {
   background: #fde68a;
 }
@@ -900,11 +1066,11 @@ const generateProof = async () => {
   .verify-title {
     font-size: 20px;
   }
-  
+
   .verify-content {
     gap: 16px;
   }
-  
+
   .component-placeholder {
     min-height: 150px;
   }

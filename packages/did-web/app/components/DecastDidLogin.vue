@@ -1,72 +1,15 @@
 <template>
-  <div class="decast-did-login">
-    <div class="login-header">
-      <h3 class="login-title">Login with Decast DID</h3>
-      <p class="login-subtitle">Connect your DID to continue</p>
-    </div>
-
-    <div class="login-content">
-      <div v-if="!isConnected" class="connect-section">
-        <div class="did-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" fill="#1B1D29" stroke="#242632" stroke-width="2"/>
-            <path d="M16 24L22 30L32 18" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M24 12C17.373 12 12 17.373 12 24C12 30.627 17.373 36 24 36C30.627 36 36 30.627 36 24C36 17.373 30.627 12 24 12Z" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="2 2"/>
-          </svg>
-        </div>
-        <button 
-          class="connect-button" 
-          @click="connectDid"
-          :disabled="isLoading"
-        >
-          <span v-if="isLoading" class="loading-spinner"></span>
-          {{ isLoading ? 'Connecting...' : 'Connect DID' }}
-        </button>
-      </div>
-
-      <div v-else class="did-info">
-        <div class="did-address">
-          <span class="address-label">Connected DID:</span>
-          <span class="address-value">{{ shortDid }}</span>
-        </div>
-        
-        <div v-if="!isAuthenticating" class="auth-section">
-          <button 
-            class="login-button" 
-            @click="authenticate"
-            :disabled="isLoading"
-          >
-            <span v-if="isLoading" class="loading-spinner"></span>
-            {{ isLoading ? 'Signing...' : 'Sign & Login' }}
-          </button>
-        </div>
-
-        <div v-else class="auth-progress">
-          <div class="progress-step">
-            <span class="step-icon">1</span>
-            <span class="step-text">Getting nonce...</span>
-          </div>
-          <div class="progress-step">
-            <span class="step-icon">2</span>
-            <span class="step-text">Signing message...</span>
-          </div>
-          <div class="progress-step">
-            <span class="step-icon">3</span>
-            <span class="step-text">Authenticating...</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="error" class="error-message">
-      {{ error }}
-    </div>
-  </div>
+  <button class="login-btn" @click="connectDid">
+    <div class="did-icon-wrapper-btn">
+      <DidIcon />
+    </div> Login with a&nbsp;<span>DecastID</span>
+  </button>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import DidIcon from '~/icons/DidIcon.vue'
 
 const config = useRuntimeConfig()
 const EXTENSION_ID = config.public.extensionId
@@ -240,8 +183,8 @@ const authenticate = async () => {
 
     // Step 2: Sign the nonce with extension
     const signResponse = await signNonce(nonce, selectedDid.value, password.value, token)
-    
-    
+
+
 
     // Success - user is now logged in
     console.log('Successfully logged in with DID!')
@@ -259,6 +202,52 @@ onUnmounted(() => {
   window.removeEventListener('message', handleDidSelected)
 })
 </script>
+
+<style scoped>
+*:not(i) {
+    font-family: 'Rethink Sans' !important;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.login-btn {
+  font-size: 14px;
+  border-radius: 10px;
+  color: #FFFFFF;
+  padding: 0rem 0.85rem;
+  width: 100%;
+  height: 46px !important;
+  outline: none;
+  border: 1px solid #FFFFFF40;
+  cursor: pointer;
+  transition: transform 0.05s ease-in-out;
+  position: relative;
+  background-color: #1B1D29;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.did-icon-wrapper-btn {
+  background-color: #1B1D29 !important;
+  border: 1px solid #242632 !important;
+  border-radius: 4px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min-content;
+  padding: 5px;
+  margin-right: 8px;
+}
+
+.did-icon-wrapper-btn svg {
+  height: 12px;
+  width: 12px;
+}
+</style>
 
 <style scoped>
 .decast-did-login {
@@ -298,7 +287,8 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
-.connect-button, .login-button {
+.connect-button,
+.login-button {
   width: 100%;
   padding: 12px 24px;
   background: linear-gradient(135deg, #1B1D29 0%, #242632 100%);
@@ -315,12 +305,14 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.connect-button:hover:not(:disabled), .login-button:hover:not(:disabled) {
+.connect-button:hover:not(:disabled),
+.login-button:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(27, 29, 41, 0.3);
 }
 
-.connect-button:disabled, .login-button:disabled {
+.connect-button:disabled,
+.login-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
@@ -407,4 +399,4 @@ onUnmounted(() => {
   font-size: 14px;
   text-align: center;
 }
-</style> 
+</style>

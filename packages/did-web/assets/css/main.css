@@ -1,0 +1,47 @@
+/* assets/css/main.css */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body * {
+  box-sizing: border-box;
+}
+
+/* Works in Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  /* scrollbar width */
+  height: 8px;
+  /* horizontal scrollbar height */
+}
+
+::-webkit-scrollbar-track {
+  background: #15161F;
+  /* track color */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #1B1D29;
+  /* thumb color */
+  border-radius: 10px;
+  border: 2px solid #15161F;
+  /* space around thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #666;
+  /* hover effect */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  /* "auto" or "thin" */
+  scrollbar-color: #1B1D29 #15161F;
+  /* thumb | track */
+}
