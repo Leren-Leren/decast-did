@@ -3,6 +3,7 @@
     <div class="did-icon-wrapper-btn">
       <DidIcon />
     </div> Login with a&nbsp;<span>DecastID</span>
+    <InstallExtensionModal v-if="shownInstallExtensionModal" :title="''" @close="closeInstallExtensionModal"/>
   </button>
 </template>
 
@@ -10,6 +11,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import DidIcon from '~/icons/DidIcon.vue'
+import InstallExtensionModal from '~/components/InstallExtensionModal.vue'
 
 const config = useRuntimeConfig()
 const EXTENSION_ID = config.public.extensionId
@@ -24,6 +26,7 @@ const isAuthenticating = ref(false)
 const error = ref('')
 const selectedDid = ref('')
 const password = ref('')
+const shownInstallExtensionModal = ref(false)
 
 // Computed
 const shortDid = computed(() => {
@@ -43,12 +46,6 @@ const checkExtension = () => {
 
 // Connect to DID extension
 const connectDid = async () => {
-  if (!checkExtension()) {
-    error.value = 'Chrome extension is not available. Please install the Decast DID Manager extension.'
-    window.open(`https://chrome.google.com/webstore/detail/decast-did-manager/${EXTENSION_ID}`, '_blank')
-    return
-  }
-
   try {
     isLoading.value = true
     error.value = ''
@@ -61,15 +58,21 @@ const connectDid = async () => {
       { action: 'open-did-popup' },
       (response) => {
         if (chrome.runtime.lastError) {
+          console.error('Extension error:', chrome.runtime.lastError.message)
           error.value = 'Extension not available'
           isLoading.value = false
+          openInstallExtensionModal()
+          return
         }
+        console.log('✅ Extension response:', response)
       }
     )
 
     // Listen for DID selection
+    window.removeEventListener('message', handleDidSelected)
     window.addEventListener('message', handleDidSelected)
   } catch (err) {
+    console.error('❌ Connect DID error:', err)
     error.value = err.message || 'Failed to connect DID'
     isLoading.value = false
   }
@@ -195,6 +198,14 @@ const authenticate = async () => {
     isLoading.value = false
     isAuthenticating.value = false
   }
+}
+
+const openInstallExtensionModal = () => {
+  shownInstallExtensionModal.value = true
+}
+
+const closeInstallExtensionModal = () => {
+  shownInstallExtensionModal.value = false
 }
 
 // Clean up event listeners

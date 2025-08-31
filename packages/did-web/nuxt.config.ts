@@ -16,7 +16,7 @@ export default defineNuxtConfig({
     public: {
       googleClientId: process.env.GOOGLE_CLIENT_ID || '1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com',
       didBaseUrl: process.env.DID_BASE_URL || 'https://did.decast.live',
-      extensionId: 'jedmblmjiognlkedejlgmnjbjiopbgoe'
+      extensionId: 'algkhhfaciplhfnkmecpmdfampkppndj'
     }
   }
 })

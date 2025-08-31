@@ -46,7 +46,7 @@
 
 <script setup>
 import { ref, shallowRef, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
-import BaseModal from '~/layouts/BaseModal.vue'
+import BaseModal from '~/common/BaseModal.vue'
 
 const props = defineProps({
   closeModal: {
