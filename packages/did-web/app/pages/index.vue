@@ -439,8 +439,16 @@ import DecastDidLogin from '~/components/DecastDidLogin.vue'
 import LockImage from '~/icons/LockImage.vue'
 import DecastLogo from '~/icons/DecastLogo.vue'
 import OrDivider from '~/common/OrDivider.vue'
-import BaseModal from '~/layouts/BaseModal.vue'
+import BaseModal from '~/common/BaseModal.vue'
+import { useHead } from '#imports'
 const { $customFetch } = useNuxtApp()
+
+useHead({
+  title: 'Decast verifier',
+  meta: [
+    { name: 'description', content: 'Manage your verifiable credential' }
+  ]
+})
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -1204,7 +1212,7 @@ onMounted(() => {
   border-radius: 16px;
   max-width: 800px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 76vh;
   overflow-y: auto;
 }
 
@@ -1451,7 +1459,8 @@ onMounted(() => {
 }
 
 .raw-data-summary:hover {
-  color: #1f2937;
+  color: rgba(255, 255, 255, .8);
+  transition: color 200ms ease-in-out;
 }
 
 .raw-data-content {
@@ -1497,7 +1506,7 @@ onMounted(() => {
 @media (max-width: 768px) {
   .modal-container {
     margin: 10px;
-    max-height: 95vh;
+    max-height: 80vh;
   }
 
   .service-details-header {

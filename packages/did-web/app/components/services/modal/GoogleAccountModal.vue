@@ -58,7 +58,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import BaseModal from '~/layouts/BaseModal.vue'
+import BaseModal from '~/common/BaseModal.vue'
 
 // Props from parent (to close modal)
 defineProps({

@@ -116,8 +116,16 @@ import EmailVerificationModal from '~/components/services/modal/EmailVerificatio
 import GoogleAccountModal from '~/components/services/modal/GoogleAccountModal.vue'
 import HumanLivenessCheck from '~/components/services/modal/HumanLivenessCheck.vue'
 import DidIcon from '~/icons/DidIcon.vue'
-import EyeIcon from "~/icons/EyeIcon.vue";
-import ArrowRight from "~/icons/ArrowRight.vue";
+import EyeIcon from "~/icons/EyeIcon.vue"
+import ArrowRight from "~/icons/ArrowRight.vue"
+import { useHead } from '#imports'
+
+useHead({
+  title: 'Decast verifier',
+  meta: [
+    { name: 'description', content: 'Manage your verifiable credential' }
+  ]
+})
 
 const config = useRuntimeConfig()
 const DID_BASE_URL = config.public.didBaseUrl
