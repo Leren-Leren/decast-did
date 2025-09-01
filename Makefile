@@ -1,7 +1,7 @@
 # Decast Monorepo Makefile
 # Common commands for managing the monorepo
 
-.PHONY: help build build-all dev prod clean logs
+.PHONY: help build build-all dev prod clean logs setup-env validate-env
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -9,16 +9,28 @@ help: ## Show this help message
 	@echo 'Targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
+setup-env: ## Set up environment variables from example
+	@echo "Setting up environment variables..."
+	@./scripts/setup-env.sh
+
+validate-env: ## Validate environment variables
+	@echo "Validating environment variables..."
+	@./scripts/validate-env.sh
+
 build: ## Build the production Docker image
+	@make validate-env
 	docker-compose build did-web
 
 build-all: ## Build all Docker images
+	@make validate-env
 	docker-compose build
 
 dev: ## Run development environment
+	@make validate-env
 	docker-compose --profile dev up did-web-dev
 
 prod: ## Run production environment
+	@make validate-env
 	docker-compose up -d did-web
 
 logs: ## Show logs

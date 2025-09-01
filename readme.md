@@ -216,32 +216,120 @@ docker build -f packages/decast-did-resolver/Dockerfile -t decast-did-resolver .
 
 ## 🌍 Environment Variables
 
-### did-web Environment Variables
+### Quick Setup
 
-Create a `.env` file in `packages/did-web/`:
+1. **Copy the example environment file**:
+   ```bash
+   cp env-example .env
+   ```
 
-```bash
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID=your_google_client_id
+2. **Update the values in `.env`** with your specific configuration.
 
-# DID Service Configuration
-DID_BASE_URL=http://localhost:3000
+### Environment Variables Reference
 
-# Chrome Extension Configuration
-EXTENSION_ID=your_extension_id
-```
+| Variable | Description | Default Value | Required |
+|----------|-------------|---------------|----------|
+| `GOOGLE_CLIENT_ID` | Google OAuth Client ID for authentication | `1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com` | Yes |
+| `DID_BASE_URL` | Base URL for the DID service | `https://did.decast.live` | Yes |
+| `EXTENSION_ID` | Extension ID for the DID Manager browser extension | `algkhhfaciplhfnkmecpmdfampkppndj` | Yes |
+| `NODE_ENV` | Node.js environment | `production` | No |
+| `HOST` | Host address for the web application | `0.0.0.0` | No |
+| `PORT` | Port for the web application | `8080` | No |
 
-### Docker Environment Variables
+### Using Environment Variables
 
-Set environment variables for Docker containers:
+#### With pnpm (Local Development)
 
-```bash
-export GOOGLE_CLIENT_ID="your_google_client_id"
-export DID_BASE_URL="http://localhost:3000"
-export EXTENSION_ID="your_extension_id"
+1. **Create environment file**:
+   ```bash
+   # In the root directory
+   cp env-example .env
+   
+   # Or in the did-web package
+   cp env-example packages/did-web/.env
+   ```
 
-docker-compose up -d
-```
+2. **Start development server**:
+   ```bash
+   pnpm dev
+   ```
+
+3. **Environment variables are automatically loaded** by Nuxt.js from the `.env` file.
+
+#### With Docker
+
+1. **Method 1: Using .env file** (Recommended)
+   ```bash
+   # Copy example and update values
+   cp env-example .env
+   
+   # Start containers (Docker Compose automatically loads .env)
+   docker-compose up -d
+   ```
+
+2. **Method 2: Using environment variables directly**:
+   ```bash
+   export GOOGLE_CLIENT_ID="your_google_client_id"
+   export DID_BASE_URL="https://your-did-service.com"
+   export EXTENSION_ID="your_extension_id"
+   
+   docker-compose up -d
+   ```
+
+3. **Method 3: Using docker-compose override**:
+   ```bash
+   # Create docker-compose.override.yml
+   version: '3.8'
+   services:
+     did-web:
+       environment:
+         - GOOGLE_CLIENT_ID=your_google_client_id
+         - DID_BASE_URL=https://your-did-service.com
+         - EXTENSION_ID=your_extension_id
+   ```
+
+#### Environment File Locations
+
+- **Root level**: `.env` (loaded by Docker Compose)
+- **did-web package**: `packages/did-web/.env` (loaded by Nuxt.js)
+- **Example file**: `env-example` (template for setup)
+
+### Security Best Practices
+
+1. **Never commit `.env` files** to version control
+2. **Use different values** for development, staging, and production
+3. **Rotate sensitive values** regularly
+4. **Use secrets management** in production environments
+5. **Validate environment variables** at startup
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Environment variables not loading**:
+   ```bash
+   # Check if .env file exists
+   ls -la .env
+   
+   # Verify Docker Compose is loading the file
+   docker-compose config
+   ```
+
+2. **Nuxt.js not reading environment variables**:
+   ```bash
+   # Ensure .env is in the correct location
+   ls -la packages/did-web/.env
+   
+   # Check Nuxt configuration
+   cat packages/did-web/nuxt.config.ts
+   ```
+
+3. **Docker containers not using updated environment variables**:
+   ```bash
+   # Rebuild containers after changing .env
+   docker-compose down
+   docker-compose up -d --build
+   ```
 
 ## 📊 Ports
 
