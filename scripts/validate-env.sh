@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 required_vars=(
     "GOOGLE_CLIENT_ID"
     "DID_BASE_URL"
+    "DID_RESOLVER_BASE_URL"
     "EXTENSION_ID"
 )
 

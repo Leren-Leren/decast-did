@@ -10,8 +10,13 @@ export function getDecastResolver(): {
 } {
   return {
     decast: async (did: string) => {
+      const baseUrl = process.env.DID_RESOLVER_BASE_URL;
+      if (!baseUrl) {
+        throw new Error('DID_RESOLVER_BASE_URL environment variable is not set');
+      }
+      
       const res = await fetch(
-        'http://localhost:3000/api/v1/dids/resolver/' + did,
+        `${baseUrl}/${did}`,
       );
       if (res.status === 200) {
         const data = await res.json();

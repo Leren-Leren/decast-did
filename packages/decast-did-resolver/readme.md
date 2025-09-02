@@ -51,6 +51,28 @@ console.log(doc);
 pnpm install
 ```
 
+## ⚙️ Configuration
+
+The resolver requires the `DID_RESOLVER_BASE_URL` environment variable to be set. This should point to the base URL of your DID resolver service.
+
+### Environment Variables
+
+| Variable | Description | Default Value | Required |
+|----------|-------------|---------------|----------|
+| `DID_RESOLVER_BASE_URL` | Base URL for the DID resolver service | `https://did.decast.live/api/v1/dids/resolver` | Yes |
+
+### Example Configuration
+
+```bash
+# Set the environment variable
+export DID_RESOLVER_BASE_URL="https://did.decast.live/api/v1/dids/resolver"
+
+# Or create a .env file
+echo "DID_RESOLVER_BASE_URL=https://did.decast.live/api/v1/dids/resolver" > .env
+```
+
+**Note**: The resolver will append the DID identifier to this base URL. For example, if `DID_RESOLVER_BASE_URL` is set to `https://did.decast.live/api/v1/dids/resolver`, a request for `did:decast:abc123` will be resolved by calling `https://did.decast.live/api/v1/dids/resolver/abc123`.
+
 ## 📄 DID Document Example
 
 ```json

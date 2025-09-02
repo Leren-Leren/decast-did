@@ -11,7 +11,10 @@ Create a `.env` file in the root directory with the following variables:
 GOOGLE_CLIENT_ID=1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com
 
 # DID Service Configuration
-DID_BASE_URL=http://localhost:3000
+DID_BASE_URL=https://did.decast.live
+
+# DID Resolver Configuration
+DID_RESOLVER_BASE_URL=https://did.decast.live/api/v1/dids/resolver
 
 # Chrome Extension Configuration
 EXTENSION_ID=algkhhfaciplhfnkmecpmdfampkppndj

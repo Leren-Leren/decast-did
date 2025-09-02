@@ -7,6 +7,9 @@ GOOGLE_CLIENT_ID=1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleuserc
 # Base URL for the DID service
 DID_BASE_URL=https://did.decast.live
 
+# Base URL for the DID resolver service
+DID_RESOLVER_BASE_URL=https://did.decast.live/api/v1/dids/resolver
+
 # Extension ID for the DID Manager browser extension
 EXTENSION_ID=algkhhfaciplhfnkmecpmdfampkppndj
 

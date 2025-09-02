@@ -231,6 +231,7 @@ docker build -f packages/decast-did-resolver/Dockerfile -t decast-did-resolver .
 |----------|-------------|---------------|----------|
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID for authentication | `1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com` | Yes |
 | `DID_BASE_URL` | Base URL for the DID service | `https://did.decast.live` | Yes |
+| `DID_RESOLVER_BASE_URL` | Base URL for the DID resolver service | `https://did.decast.live/api/v1/dids/resolver` | Yes |
 | `EXTENSION_ID` | Extension ID for the DID Manager browser extension | `algkhhfaciplhfnkmecpmdfampkppndj` | Yes |
 | `NODE_ENV` | Node.js environment | `production` | No |
 | `HOST` | Host address for the web application | `0.0.0.0` | No |

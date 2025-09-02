@@ -15,6 +15,7 @@ services:
       - PORT=8080
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com}
       - DID_BASE_URL=${DID_BASE_URL:-http://localhost:8080}
+      - DID_RESOLVER_BASE_URL=${DID_RESOLVER_BASE_URL:-https://did.decast.live/api/v1/dids/resolver}
       - EXTENSION_ID=${EXTENSION_ID:-algkhhfaciplhfnkmecpmdfampkppndj}
     env_file:
       - .env
@@ -68,6 +69,7 @@ services:
       - PORT=8080
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-1054183103777-7eqm2ddpdo6ok9b1cq4c350132mmiusr.apps.googleusercontent.com}
       - DID_BASE_URL=${DID_BASE_URL:-http://localhost:8080}
+      - DID_RESOLVER_BASE_URL=${DID_RESOLVER_BASE_URL:-https://did.decast.live/api/v1/dids/resolver}
       - EXTENSION_ID=${EXTENSION_ID:-algkhhfaciplhfnkmecpmdfampkppndj}
     volumes:
       - ./packages/did-web:/app/packages/did-web
