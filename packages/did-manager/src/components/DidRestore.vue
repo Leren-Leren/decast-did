@@ -54,6 +54,10 @@ export default {
     };
   },
   methods: {
+    isValidBase58(str) {
+      const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
+      return base58Regex.test(str);
+    },
     async restorePrivateKey() {
       if (!this.didName.trim()) {
         this.$emit('response', 'Please enter a DID name.');
@@ -63,34 +67,84 @@ export default {
         this.$emit('response', 'Please enter a private key.');
         return;
       }
+      if (!this.extensionPassword) {
+        this.$emit('response', 'Extension password is missing.');
+        return;
+      }
       this.isLoading = true;
       try {
         const cleanKey = this.restoreKeyInput.trim();
-        const decodedKey = bs58.decode(cleanKey);
-        if (decodedKey.length !== 64) throw new Error('Invalid private key length.');
+        console.log('Restoring private key, length:', cleanKey.length, 'password length:', this.extensionPassword.length);
 
-        const publicKey = ed.extractPublicKeyFromSecretKey(decodedKey);
+        if (!this.isValidBase58(cleanKey)) {
+          throw new Error('Invalid private key: contains non-Base58 characters.');
+        }
+
+        let decodedKey;
+        try {
+          decodedKey = bs58.decode(cleanKey);
+        } catch (error) {
+          throw new Error('Invalid private key: failed to decode Base58 string.');
+        }
+        if (decodedKey.length !== 64) {
+          throw new Error(`Invalid private key: expected 64 bytes, got ${decodedKey.length} bytes.`);
+        }
+
+        let publicKey;
+        try {
+          publicKey = ed.extractPublicKeyFromSecretKey(decodedKey);
+        } catch (error) {
+          throw new Error('Invalid private key: cannot derive public key.');
+        }
+        if (publicKey.length !== 32) {
+          throw new Error(`Invalid public key: expected 32 bytes, got ${publicKey.length} bytes.`);
+        }
+
+        try {
+          const testMessage = new TextEncoder().encode('test');
+          const testSignature = ed.sign(decodedKey, testMessage);
+          if (!ed.verify(publicKey, testMessage, testSignature)) {
+            throw new Error('Invalid private key: test signature verification failed.');
+          }
+        } catch (error) {
+          throw new Error('Invalid private key: cannot perform signing operation.');
+        }
+
         const did = `did:decast:${bs58.encode(publicKey)}`;
+
+        const encryptedSecretKey = CryptoJS.AES.encrypt(cleanKey, this.extensionPassword, {
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.Pkcs7,
+        }).toString();
+
+        try {
+          const decryptedKey = CryptoJS.AES.decrypt(encryptedSecretKey, this.extensionPassword, {
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7,
+          }).toString(CryptoJS.enc.Utf8);
+          if (decryptedKey !== cleanKey) {
+            throw new Error('Encryption error: decrypted key does not match original.');
+          }
+          console.log('Decryption test passed, decrypted key length:', decryptedKey.length);
+        } catch (error) {
+          throw new Error('Encryption error: failed to decrypt secret key.');
+        }
 
         const didData = {
           did,
           name: this.didName.trim(),
           publicKey: bs58.encode(publicKey),
-          rawSecretKey: cleanKey,
+          secretKey: encryptedSecretKey,
           createdAt: new Date().toISOString(),
+          rawSecretKey: cleanKey, // For backup only
         };
 
-        // Encrypt the entire didData object
-        const encryptedDidData = CryptoJS.AES.encrypt(
-          JSON.stringify(didData),
-          this.extensionPassword
-        ).toString();
-
         this.keyInfo = { did, publicKey: bs58.encode(publicKey) };
-        this.$emit('key-generated', { did, encryptedDidData });
-        this.$emit('response', `DID "${this.didName}" restored successfully!`);
+        this.$emit('key-generated', didData);
+        // this.$emit('response', `DID "${this.didName}" restored successfully!`);
         this.isLoading = false;
       } catch (error) {
+        console.error('Restore error:', error.message);
         this.$emit('response', `Error restoring private key: ${error.message}`);
         this.isLoading = false;
       }

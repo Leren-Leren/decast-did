@@ -1,4 +1,3 @@
-<!-- DidSelector.vue -->
 <template>
   <div class="flex flex-col items-center justify-center w-full h-full">
     <h3 class="text-xl font-semibold text-center text-white mb-4">Connect an Identity</h3>
@@ -22,14 +21,6 @@
           {{ entry.name ? `${entry.name} - ${truncateDid(entry.did)}` : truncateDid(entry.did) }}
         </option>
       </select>
-
-      <!-- <button
-        v-if="localSelectedDid"
-        class="w-full bg-[#d7df23] text-black px-6 py-2 rounded-lg font-semibold text-sm hover:bg-[#d7df23]/90 transition"
-        @click="confirmSelection"
-      >
-        Confirm
-      </button> -->
     </div>
 
     <p v-if="storedDids.length === 0" class="text-gray-500 text-sm text-center mt-4">
@@ -40,6 +31,8 @@
 </template>
 
 <script>
+import CryptoJS from 'crypto-js';
+
 export default {
   name: 'DidSelector',
   props: {
@@ -47,36 +40,81 @@ export default {
       type: Array,
       default: () => [],
     },
+    extensionPassword: {
+      type: String,
+      default: '',
+    },
   },
   data() {
     return {
       localSelectedDid: '',
       errorMessage: '',
+      storedDids: [],
     };
   },
-  computed: {
-    storedDids() {
-      return this.dids
-        .map((didObj) => {
-          const stored = JSON.parse(localStorage.getItem('didKeyPairs') || '{}');
-          return {
-            did: didObj.did,
-            name: stored[didObj.did]?.name || '',
-            createdAt: stored[didObj.did]?.createdAt || new Date().toISOString(),
-          };
-        })
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    },
+  mounted() {
+    this.loadStoredDids();
   },
-  watch:{
+  watch: {
     localSelectedDid(newVal) {
       this.errorMessage = '';
       if (newVal) {
         this.confirmSelection();
       }
     },
+    dids: {
+      handler() {
+        this.loadStoredDids();
+      },
+      deep: true,
+    },
+    extensionPassword() {
+      this.loadStoredDids();
+    },
   },
   methods: {
+    loadStoredDids() {
+      chrome.storage.local.get(['didKeyPairs'], (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error retrieving didKeyPairs:', chrome.runtime.lastError.message);
+          this.errorMessage = 'Error loading DID profiles.';
+          return;
+        }
+
+        let stored = {};
+        if (result.didKeyPairs) {
+          try {
+            if (this.extensionPassword) {
+              const decrypted = CryptoJS.AES.decrypt(
+                result.didKeyPairs,
+                this.extensionPassword,
+                { mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+              ).toString(CryptoJS.enc.Utf8);
+              stored = JSON.parse(decrypted || '{}');
+            } else {
+              // Handle first-time users with unencrypted didKeyPairs
+              stored = JSON.parse(result.didKeyPairs || '{}');
+            }
+          } catch (error) {
+            console.error('Error decrypting didKeyPairs:', error.message);
+            this.errorMessage = 'Failed to decrypt DID profiles. Please ensure your password is correct.';
+            return;
+          }
+        }
+
+        this.storedDids = Object.keys(stored)
+          .map((did) => ({
+            did,
+            name: stored[did].name || '',
+            createdAt: stored[did].createdAt || new Date().toISOString(),
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (this.storedDids.length === 0) {
+          this.errorMessage = 'No DID profiles found. Please generate or restore a DID.';
+        }
+      });
+    },
     confirmSelection() {
       if (!this.localSelectedDid) {
         this.errorMessage = 'Please select a DID.';
