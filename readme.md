@@ -47,34 +47,6 @@ decast/
    pnpm dev
    ```
 
-## 📦 Packages
-
-##  🔁 DID Verification Flow
-```mermaid
-sequenceDiagram
-    participant Verifier (Decast)
-    participant User
-    participant did-front
-    participant DID Manager
-    participant Service (e.g., Google, Email, Liveness)
-    
-    Verifier->>User: Click verification button
-    User->>did-front: Redirect to verification frontend
-    did-front->>User: Show requested data and login options
-    User->>DID Manager: Login via Decast or Metamask (did:decast or did:ethr)
-    DID Manager->>did-front: Return DID + check for existing claim
-    alt Credential exists
-        did-front->>User: Show VC ready
-    else Credential missing
-        did-front->>Service: Perform verification
-        Service->>did-front: Save claim to DID Document
-    end
-    did-front->>Verifier: Redirect with DID-JWT
-    Verifier->>Verifier: Validate DID-JWT & extract credential subject
-    Verifier->>User: Grant access
-
-```
-
 ## 📦 Monorepo Packages
 decast-did-resolver
 `did:decast` is a custom DID method that uniquely represents a user within the Decast ecosystem. It complies with the [W3C DID specification](https://www.w3.org/TR/did-core/) and provides:
@@ -589,69 +561,4 @@ sequenceDiagram
     I->>C: Issue new credential
   end
 ```
-
-
-
-  {
-  "sub": "did:decast:abc123",
-  "iss": "did:decast:abc123",
-  "aud": "https://decast.live",
-  "exp": 1720000000,
-  "nbf": 1719990000,
-  "iat": 1719995000,
-  "credentialSchema": "did:decast:schemas:LivenessCredential",
-  "credentialSubject": {
-    "firstName": "John",
-    "age": 30,
-    "verifiedDate": "2025-07-25"
-  }
-}
-
-🧪 Development
-
-This repository consists of:
-	•	did-front: DID authentication and credential presentation UI.
-	•	did-sdk: DID-JWT generation, credential resolution, and verification logic.
-	•	verifier-demo: Sample verifier implementation for integration and testing.
-
-
-    🛠️ API Endpoints
-
-Base URL: https://did.decast.live/api/v1
-
-🔐 1. Login
-
-Initiate a login session using a wallet or DID.
-
-Request
-POST /auth/login
-Content-Type: application/json
-
-Body
-{
-  "method": "wallet" | "did",
-  "identifier": "0x123...abc" | "did:decast:xyz"
-}
-
-📥 2. Get All Registered DIDs
-
-Retrieve DIDs associated with a user or wallet.
-
-
-🆕 3. Register a New DID
-
-Create and register a new DID.
-
-
-✏️ 4. Update DID Document
-
-Update fields in an existing DID document.
-🗑️ 5. Remove a DID
-
-Delete a DID (soft delete or revoke access).
-
-
-🎓 6. Get Verifiable Credential (VC)
-
-Fetch a verifiable credential (VC) for a DID document and schema.
 
