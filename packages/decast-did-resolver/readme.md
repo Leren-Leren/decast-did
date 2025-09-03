@@ -2,6 +2,16 @@
 
 This is a DID Resolver implementation for the `did:decast` method. It allows you to resolve `did:decast:*` identifiers into W3C-compliant DID Documents.
 
+## 🆔 What is `did:decast`?
+
+`did:decast` is a custom DID method that uniquely represents a user within the Decast ecosystem. It complies with the [W3C DID specification](https://www.w3.org/TR/did-core/) and provides:
+
+- Cryptographic key association (Ed25519 by default)
+- Public verification methods
+- Authentication support (JWT, DIDComm, etc.)
+- Optional service endpoints (profile, storages, etc.)
+
+
 ## 📦 Installation
 
 ```bash
@@ -39,8 +49,29 @@ console.log(doc);
 
 ```bash
 pnpm install
-pnpm build
 ```
+
+## ⚙️ Configuration
+
+The resolver requires the `DID_RESOLVER_BASE_URL` environment variable to be set. This should point to the base URL of your DID resolver service.
+
+### Environment Variables
+
+| Variable | Description | Default Value | Required |
+|----------|-------------|---------------|----------|
+| `DID_RESOLVER_BASE_URL` | Base URL for the DID resolver service | `https://did.decast.live/api/v1/dids/resolver` | Yes |
+
+### Example Configuration
+
+```bash
+# Set the environment variable
+export DID_RESOLVER_BASE_URL="https://did.decast.live/api/v1/dids/resolver"
+
+# Or create a .env file
+echo "DID_RESOLVER_BASE_URL=https://did.decast.live/api/v1/dids/resolver" > .env
+```
+
+**Note**: The resolver will append the DID identifier to this base URL. For example, if `DID_RESOLVER_BASE_URL` is set to `https://did.decast.live/api/v1/dids/resolver`, a request for `did:decast:abc123` will be resolved by calling `https://did.decast.live/api/v1/dids/resolver/abc123`.
 
 ## 📄 DID Document Example
 

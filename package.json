@@ -1,11 +1,26 @@
 {
   "name": "decast",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Decentralized Identity Management System",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "pnpm --filter did-web dev",
+    "dev:manager": "pnpm --filter did-manager dev",
+    "build": "pnpm --recursive build",
+    "build:web": "pnpm --filter did-web build",
+    "build:manager": "pnpm --filter did-manager build",
+    "clean": "pnpm --recursive exec rm -rf node_modules dist .nuxt",
+    "install:all": "pnpm install",
+    "lint": "pnpm --recursive exec echo 'Linting not configured yet'",
+    "test": "pnpm --recursive exec echo 'Testing not configured yet'"
   },
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
 }

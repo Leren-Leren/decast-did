@@ -4,11 +4,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
     "test": "echo \"no tests yet\""
   },
   "license": "MIT",
   "dependencies": {
     "did-resolver": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=8.0.0"
   }
 }

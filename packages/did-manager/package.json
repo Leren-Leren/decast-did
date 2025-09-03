@@ -1,11 +1,15 @@
 {
-  "name": "did-ext",
+  "name": "did-manager",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "webpack --watch",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +36,17 @@
     "style-loader": "^4.0.0",
     "vue-loader": "^17.4.2",
     "webpack": "^5.99.9",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "vitest": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
+    "@vue/test-utils": "^2.4.4",
+    "@testing-library/vue": "^8.0.1",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "jsdom": "^26.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=8.0.0"
   }
 }

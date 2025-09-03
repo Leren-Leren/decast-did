@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col items-center justify-center w-full h-full">
-    <h3 class="text-xl font-semibold text-center text-white mb-4">Connect a DID</h3>
+    <h3 class="text-xl font-semibold text-center text-white mb-4">Connect an Identity</h3>
     <p class="text-gray-500 text-sm font-semibold text-center mb-8">
       Your DID uniquely identifies you on<br />decentralized platforms.
     </p>
@@ -11,7 +11,7 @@
         v-model="localSelectedDid"
         class="w-full bg-transparent text-white bg-gray-800 text-base border border-gray-700 rounded px-3 py-2 mb-4 focus:ring-2 focus:ring-[#D7DF23] outline-none"
       >
-        <option value="" disabled class="text-white bg-[#15161E]">Choose a DID</option>
+        <option value="" disabled class="text-white bg-[#15161E]">Choose an ID</option>
         <option
           v-for="entry in storedDids"
           :key="entry.did"
@@ -21,24 +21,18 @@
           {{ entry.name ? `${entry.name} - ${truncateDid(entry.did)}` : truncateDid(entry.did) }}
         </option>
       </select>
-
-      <button
-        v-if="localSelectedDid"
-        class="w-full bg-[#d7df23] text-black px-6 py-2 rounded-lg font-semibold text-sm hover:bg-[#d7df23]/90 transition"
-        @click="confirmSelection"
-      >
-        Confirm
-      </button>
     </div>
 
     <p v-if="storedDids.length === 0" class="text-gray-500 text-sm text-center mt-4">
-      No DIDs found.
+      No IDs found.
     </p>
     <p v-if="errorMessage" class="text-red-500 text-sm mt-2">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script>
+import CryptoJS from 'crypto-js';
+
 export default {
   name: 'DidSelector',
   props: {
@@ -46,28 +40,81 @@ export default {
       type: Array,
       default: () => [],
     },
+    extensionPassword: {
+      type: String,
+      default: '',
+    },
   },
   data() {
     return {
       localSelectedDid: '',
       errorMessage: '',
+      storedDids: [],
     };
   },
-  computed: {
-    storedDids() {
-      return this.dids
-        .map((did) => {
-          const stored = JSON.parse(localStorage.getItem('didKeyPairs') || '{}');
-          return {
-            did,
-            name: stored[did]?.name || '',
-            createdAt: stored[did]?.createdAt || new Date().toISOString(),
-          };
-        })
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  mounted() {
+    this.loadStoredDids();
+  },
+  watch: {
+    localSelectedDid(newVal) {
+      this.errorMessage = '';
+      if (newVal) {
+        this.confirmSelection();
+      }
+    },
+    dids: {
+      handler() {
+        this.loadStoredDids();
+      },
+      deep: true,
+    },
+    extensionPassword() {
+      this.loadStoredDids();
     },
   },
   methods: {
+    loadStoredDids() {
+      chrome.storage.local.get(['didKeyPairs'], (result) => {
+        if (chrome.runtime.lastError) {
+          console.error('Error retrieving didKeyPairs:', chrome.runtime.lastError.message);
+          this.errorMessage = 'Error loading DID profiles.';
+          return;
+        }
+
+        let stored = {};
+        if (result.didKeyPairs) {
+          try {
+            if (this.extensionPassword) {
+              const decrypted = CryptoJS.AES.decrypt(
+                result.didKeyPairs,
+                this.extensionPassword,
+                { mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+              ).toString(CryptoJS.enc.Utf8);
+              stored = JSON.parse(decrypted || '{}');
+            } else {
+              // Handle first-time users with unencrypted didKeyPairs
+              stored = JSON.parse(result.didKeyPairs || '{}');
+            }
+          } catch (error) {
+            console.error('Error decrypting didKeyPairs:', error.message);
+            this.errorMessage = 'Failed to decrypt DID profiles. Please ensure your password is correct.';
+            return;
+          }
+        }
+
+        this.storedDids = Object.keys(stored)
+          .map((did) => ({
+            did,
+            name: stored[did].name || '',
+            createdAt: stored[did].createdAt || new Date().toISOString(),
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (this.storedDids.length === 0) {
+          this.errorMessage = 'No DID profiles found. Please generate or restore a DID.';
+        }
+      });
+    },
     confirmSelection() {
       if (!this.localSelectedDid) {
         this.errorMessage = 'Please select a DID.';
@@ -75,13 +122,16 @@ export default {
       }
 
       this.errorMessage = '';
+      console.log('Selected DID:', this.localSelectedDid);
 
+      // Emit DID as an object for nonce signing
       this.$emit('did-selected', { did: this.localSelectedDid });
 
+      // Post message to content script
       window.postMessage(
         {
           action: 'did-selected',
-          did: this.localSelectedDid,
+          did: { did: this.localSelectedDid },
         },
         window.location.origin
       );
