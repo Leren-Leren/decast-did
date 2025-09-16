@@ -38,8 +38,8 @@ decast/
 
 3. **Set up environment variables**:
    ```bash
-   # Create .env file in packages/did-web/
-   cp packages/did-web/.env.example packages/did-web/.env
+   # Create .env file in the project root
+   cp env-example .env
    ```
 
 4. **Start development**:
@@ -128,6 +128,65 @@ pnpm clean                 # Clean all build artifacts
 pnpm install:all           # Install dependencies for all packages
 ```
 
+## 🛠️ Makefile Commands
+
+Use the Makefile for common workflows. List all targets:
+
+```bash
+make help
+```
+
+Common targets:
+
+- **setup-env**: copy `env-example` to `.env` via script
+  ```bash
+  make setup-env
+  ```
+- **validate-env**: verify required env variables are set
+  ```bash
+  make validate-env
+  ```
+- **dev**: start development environment (Docker profile `dev`)
+  ```bash
+  make dev
+  ```
+- **prod**: start production environment
+  ```bash
+  make prod
+  ```
+- **build**: build the `did-web` Docker image
+  ```bash
+  make build
+  ```
+- **build-all**: build all Docker images
+  ```bash
+  make build-all
+  ```
+- **logs**: follow container logs
+  ```bash
+  make logs
+  ```
+- **clean**: stop and remove containers
+  ```bash
+  make clean
+  ```
+- **clean-all**: stop and remove containers, volumes, and images
+  ```bash
+  make clean-all
+  ```
+- **test**: simple health check against local service
+  ```bash
+  make test
+  ```
+- **install**: install dependencies locally with pnpm
+  ```bash
+  make install
+  ```
+- **build-local**: build packages locally with pnpm
+  ```bash
+  make build-local
+  ```
+
 ### Package-Specific Commands
 
 ```bash
@@ -215,11 +274,8 @@ docker build -f packages/decast-did-resolver/Dockerfile -t decast-did-resolver .
 
 1. **Create environment file**:
    ```bash
-   # In the root directory
+   # In the project root directory
    cp env-example .env
-   
-   # Or in the did-web package
-   cp env-example packages/did-web/.env
    ```
 
 2. **Start development server**:
@@ -263,8 +319,7 @@ docker build -f packages/decast-did-resolver/Dockerfile -t decast-did-resolver .
 
 #### Environment File Locations
 
-- **Root level**: `.env` (loaded by Docker Compose)
-- **did-web package**: `packages/did-web/.env` (loaded by Nuxt.js)
+- **Root level**: `.env` (primary env file)
 - **Example file**: `env-example` (template for setup)
 
 ### Security Best Practices
@@ -290,8 +345,8 @@ docker build -f packages/decast-did-resolver/Dockerfile -t decast-did-resolver .
 
 2. **Nuxt.js not reading environment variables**:
    ```bash
-   # Ensure .env is in the correct location
-   ls -la packages/did-web/.env
+   # Ensure .env exists at the project root
+   ls -la .env
    
    # Check Nuxt configuration
    cat packages/did-web/nuxt.config.ts
